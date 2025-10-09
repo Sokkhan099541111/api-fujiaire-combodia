@@ -17,13 +17,10 @@
    ```bash
    git clone https://github.com/Sokkhan099541111/api-fujiaire-combodia
    cd api-fujiaire-combodia
+
+---
+
 2. **Run project**
 
   ```bash
   uvicorn main:app --reload
-
-**main** → the Python module name (the file main.py)
-
-**app** → the FastAPI instance inside that module
-
-**--reload** → auto‑reload when code changes (useful during development)
