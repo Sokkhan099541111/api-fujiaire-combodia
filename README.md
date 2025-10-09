@@ -20,7 +20,8 @@
 
 ---
 
-2. **Run project**
+## Run project**
 
   ```bash
   uvicorn main:app --reload
+
