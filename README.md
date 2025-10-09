@@ -18,7 +18,7 @@
    cd api-fujiaire-combodia
 
 
-## Run project
+## Run Project
 
   ```bash
   uvicorn main:app --reload
