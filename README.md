@@ -9,7 +9,6 @@
 - (Optional but recommended) Virtual environment tool: `venv`, `virtualenv`, `conda`, etc.  
 - (Optional) `.env` or environment variables for configuration (e.g. database URL, secret key)
 
----
 
 ## 🛠️ Installation & Setup
 
@@ -18,9 +17,8 @@
    git clone https://github.com/Sokkhan099541111/api-fujiaire-combodia
    cd api-fujiaire-combodia
 
----
 
-## Run project**
+## Run project
 
   ```bash
   uvicorn main:app --reload
