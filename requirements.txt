@@ -1,4 +1,4 @@
 pip freeze > requirements.txt
 git add requirements.txt
-git commit -m "Add requirements.txt"
+git commit -m "Update requirements"
 git push origin main
