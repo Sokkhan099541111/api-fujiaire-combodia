@@ -29,16 +29,16 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def register_user(username: str, password: str):
+def register_user(email: str, password: str):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+    cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
     if cursor.fetchone():
-        raise HTTPException(status_code=400, detail="Username already exists")
+        raise HTTPException(status_code=400, detail="email already exists")
 
     hashed_pw = hash_password(password)
-    cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_pw))
+    cursor.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, hashed_pw))
     conn.commit()
     cursor.close()
     conn.close()
@@ -49,14 +49,14 @@ def login_user(form_data: OAuth2PasswordRequestForm):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM users WHERE username = %s", (form_data.username,))
+    cursor.execute("SELECT * FROM users WHERE email = %s", (form_data.email,))
     user = cursor.fetchone()
 
     cursor.close()
     conn.close()
 
     if not user or not verify_password(form_data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_access_token({"sub": user["username"]})
+    token = create_access_token({"sub": user["email"]})
     return {"access_token": token, "token_type": "bearer"}

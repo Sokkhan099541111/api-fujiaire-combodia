@@ -1,29 +1,71 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
 from controllers import controllerRole
+from utils.jwt_handler import get_current_user
 
-router = APIRouter(prefix="/roles", tags=["Roles"])
+router = APIRouter(prefix="/api/roles", tags=["Roles"])
 
+
+def require_permission(permission: str):
+    def permission_checker(user=Depends(get_current_user)):
+        if permission not in user["permissions"]:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return user
+    return permission_checker
+
+
+# ===============================
+# Get all roles
+# ===============================
 @router.get("/")
-def get_all():
-    return controllerRole.get_all_roles()
+async def get_all(user=Depends(require_permission("Read Roles"))):
+    return await controllerRole.get_all_roles()
 
+
+# ===============================
+# Get one role by ID
+# ===============================
 @router.get("/{role_id}")
-def get_one(role_id: int):
-    role = controllerRole.get_role_by_id(role_id)
+async def get_one(role_id: int, user=Depends(require_permission("Read Roles"))):
+    role = await controllerRole.get_role_by_id(role_id)
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     return role
 
+
+# ===============================
+# Create role
+# ===============================
 @router.post("/create")
-async def create(request: Request):
+async def create(request: Request, user=Depends(require_permission("Create Roles"))):
     data = await request.json()
-    return controllerRole.create_role(data)
+    return await controllerRole.create_role(data)
 
+
+# ===============================
+# Update role
+# ===============================
 @router.put("/update/{role_id}")
-async def update(role_id: int, request: Request):
+async def update(role_id: int, request: Request, user=Depends(require_permission("Update Roles"))):
     data = await request.json()
-    return controllerRole.update_role(role_id, data)
+    return await controllerRole.update_role(role_id, data)
 
+
+# ===============================
+# Delete role (soft delete)
+# ===============================
 @router.put("/delete/{role_id}")
-def delete(role_id: int):
-    return controllerRole.delete_role(role_id)
+async def delete(role_id: int, user=Depends(require_permission("Delete Roles"))):
+    return await controllerRole.delete_role(role_id)
+
+
+# ===============================
+# Get current user's role info
+# ===============================
+@router.get("/role/me")
+async def get_me(payload: dict = Depends(get_current_user)):
+    return {
+        "email": payload["sub"],
+        "role": payload["role"],
+        "user_id": payload["user_id"],
+        "permissions": payload["permissions"]
+    }
