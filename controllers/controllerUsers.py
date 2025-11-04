@@ -3,7 +3,10 @@ from fastapi import HTTPException
 from security import hash_password, verify_password
 from db import get_db_connection  # this should return an aiomysql connection
 import aiomysql
+<<<<<<< HEAD
 import pymysql
+=======
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 
 # ===============================
 # Users
@@ -123,7 +126,11 @@ async def get_user_from_db(email: str):
     conn.close()
     return user
 
+<<<<<<< HEAD
 async def get_user_permissions(user_id):
+=======
+async def get_user_permissions(user_id: int):
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
     sql_role = """
         SELECT p.name AS permission
         FROM permission p
@@ -139,6 +146,7 @@ async def get_user_permissions(user_id):
     """
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
+<<<<<<< HEAD
         try:
             await cursor.execute(sql_role, (user_id,))
             role_permissions = [row['permission'] for row in await cursor.fetchall()]
@@ -150,6 +158,13 @@ async def get_user_permissions(user_id):
             if getattr(e, "args", [None])[0] == 1146:
                 return []
             raise
+=======
+        await cursor.execute(sql_role, (user_id,))
+        role_permissions = [row['permission'] for row in await cursor.fetchall()]
+
+        await cursor.execute(sql_user, (user_id,))
+        user_permissions = [row['permission'] for row in await cursor.fetchall()]
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 
     conn.close()
     return list(set(role_permissions + user_permissions))

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # from fastapi import HTTPException
 # from fastapi.security import OAuth2PasswordRequestForm
 # from passlib.context import CryptContext
@@ -62,6 +63,8 @@
 #     return {"access_token": token, "token_type": "bearer"}
 
 
+=======
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -70,6 +73,7 @@ import jwt
 import datetime
 import os
 
+<<<<<<< HEAD
 # ---------------------------------------------------------------------
 # PASSWORD HASHING
 # ---------------------------------------------------------------------
@@ -92,19 +96,43 @@ ALGORITHM = "HS256"
 
 def create_access_token(data: dict) -> str:
     """Create a JWT token with 1-hour expiration."""
+=======
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+hashed_password = pwd_context.hash("123456")
+print(hashed_password)
+
+SECRET_KEY = os.getenv("JWT_SECRET", "your_jwt_secret")
+ALGORITHM = "HS256"
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict):
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
     to_encode = data.copy()
     expire = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+<<<<<<< HEAD
 
 # ---------------------------------------------------------------------
 # USER REGISTRATION
 # ---------------------------------------------------------------------
+=======
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 def register_user(email: str, password: str):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+<<<<<<< HEAD
     # Check for duplicate email
     cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
     if cursor.fetchone():
@@ -117,11 +145,21 @@ def register_user(email: str, password: str):
     cursor.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, hashed_pw))
     conn.commit()
 
+=======
+    cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+    if cursor.fetchone():
+        raise HTTPException(status_code=400, detail="email already exists")
+
+    hashed_pw = hash_password(password)
+    cursor.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (email, hashed_pw))
+    conn.commit()
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
     cursor.close()
     conn.close()
 
     return {"message": "User registered successfully"}
 
+<<<<<<< HEAD
 
 # ---------------------------------------------------------------------
 # USER LOGIN
@@ -137,11 +175,19 @@ def login_user(form_data: OAuth2PasswordRequestForm):
 
     # Use .username instead of .email
     cursor.execute("SELECT * FROM users WHERE email = %s", (form_data.username,))
+=======
+def login_user(form_data: OAuth2PasswordRequestForm):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM users WHERE email = %s", (form_data.email,))
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
     user = cursor.fetchone()
 
     cursor.close()
     conn.close()
 
+<<<<<<< HEAD
     # Verify user exists and password is correct
     if not user or not verify_password(form_data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -155,3 +201,10 @@ def login_user(form_data: OAuth2PasswordRequestForm):
         "user_id": user["id"],
         "email": user["email"],
     }
+=======
+    if not user or not verify_password(form_data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = create_access_token({"sub": user["email"]})
+    return {"access_token": token, "token_type": "bearer"}
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a

@@ -10,9 +10,13 @@ uvicorn[standard]
 gunicorn==20.1.0
 python-multipart
 mysql-connector-python
+<<<<<<< HEAD
 # pin passlib and bcrypt to known-compatible versions
 passlib[bcrypt]==1.7.4
 bcrypt==3.2.0
+=======
+passlib[bcrypt]
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 python-jose
 PyJWT
 idna==3.10

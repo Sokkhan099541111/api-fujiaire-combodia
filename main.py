@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+<<<<<<< HEAD
 from fastapi.staticfiles import StaticFiles
 
+=======
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 
 # Router imports
 from routers import (
@@ -30,6 +33,7 @@ from routers import (
 app = FastAPI()
 
 origins = [
+<<<<<<< HEAD
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     'http://172.28.96.1:5173',
@@ -38,10 +42,15 @@ origins = [
     "http://127.0.0.1:5173",
     "https://backend.fujiairecambodia.com",
     "https://demo.fujiairecambodia.com"
+=======
+    "http://localhost:5173",  # Vite dev server
+    # Add other allowed origins here
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 ]
 
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
     allow_origins=origins,        # Or ["*"] to allow all
     allow_credentials=True,
     allow_methods=["*"],          # Allow all HTTP methods
@@ -61,6 +70,14 @@ except Exception:
     # If import fails or anything else goes wrong, don't crash app startup here.
     pass
 
+=======
+    allow_origins=origins,  # Or ["*"] to allow all during dev
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 # Include routers
 app.include_router(routerUsers.router)
 app.include_router(routerAuth.router)
@@ -82,6 +99,7 @@ app.include_router(routerWarranty.router)
 app.include_router(routerPermission.router)
 app.include_router(routerRolePermission.router)
 app.include_router(routerSpicification.router)
+<<<<<<< HEAD
 app.include_router(routerGallery.router)
 app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -91,6 +109,8 @@ app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.include_router(routerGallery.router, prefix="/api/gallery", tags=["Gallery"])
 
 
+=======
+>>>>>>> 8d49c6b84cc6d05a2f74ec6138a4145acd273f6a
 
 @app.get("/")
 def root():
