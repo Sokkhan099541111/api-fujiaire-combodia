@@ -90,7 +90,7 @@ app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(routerGallery.router, prefix="/api/gallery", tags=["Gallery"])
 
-
+# Basic root endpoint
 
 @app.get("/")
 def root():
