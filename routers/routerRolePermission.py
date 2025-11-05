@@ -74,47 +74,65 @@ async def assign_permissions_to_user(
 # ----------------------------
 @router.get("/user/{user_id}")
 async def get_user_permissions(user_id: int, user=Depends(get_current_user)):
-    db = await get_db_connection()
+    try:
+        db = await get_db_connection()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB connection error: {e}")
+
     conn_is_pool = hasattr(db, "acquire")
     result = []
 
     try:
         if conn_is_pool:
+            # ---------- For pooled connection ----------
             async with db.acquire() as conn:
-                async with conn.cursor(dictionary=True) as cursor:
-                    # Fetch all permissions
+                async with conn.cursor() as cursor:
+                    # 1. Fetch all permissions
                     await cursor.execute("SELECT id, name FROM permission WHERE status=1")
                     all_permissions = await cursor.fetchall()
 
-                    # Fetch assigned permissions
+                    # 2. Fetch assigned permissions
                     await cursor.execute(
-                        "SELECT permission_id FROM user_permission WHERE user_id=%s", (user_id,)
+                        "SELECT permission_id FROM user_permission WHERE user_id=%s",
+                        (user_id,),
                     )
                     assigned_rows = await cursor.fetchall()
-
         else:
-            async with db.cursor(dictionary=True) as cursor:
+            # ---------- For single async connection ----------
+            async with db.cursor() as cursor:
                 await cursor.execute("SELECT id, name FROM permission WHERE status=1")
                 all_permissions = await cursor.fetchall()
 
                 await cursor.execute(
-                    "SELECT permission_id FROM user_permission WHERE user_id=%s", (user_id,)
+                    "SELECT permission_id FROM user_permission WHERE user_id=%s",
+                    (user_id,),
                 )
                 assigned_rows = await cursor.fetchall()
 
-        assigned_ids = {row["permission_id"] for row in assigned_rows}
+        # ✅ Convert results to dicts if not already
+        def to_dict_list(rows, columns):
+            return [dict(zip(columns, row)) for row in rows]
 
-        # Mark assigned permissions
+        if all_permissions and not isinstance(all_permissions[0], dict):
+            cols = ["id", "name"]
+            all_permissions = to_dict_list(all_permissions, cols)
+
+        if assigned_rows and not isinstance(assigned_rows[0], dict):
+            assigned_rows = to_dict_list(assigned_rows, ["permission_id"])
+
+        # ✅ Mark assigned permissions
+        assigned_ids = {row["permission_id"] for row in assigned_rows}
         for perm in all_permissions:
             perm["assigned"] = perm["id"] in assigned_ids
 
         result = all_permissions
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Query error: {e}")
 
     finally:
+        # ✅ Ensure cleanup if not pooled
         if db and not conn_is_pool:
-            db.close()
+            await db.ensure_closed() if hasattr(db, "ensure_closed") else db.close()
 
-    return result
+    return {"permissions": result}
