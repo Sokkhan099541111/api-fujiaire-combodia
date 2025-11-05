@@ -7,13 +7,23 @@ from db import get_db_connection
 # -------------------------
 # Get all permissions
 # -------------------------
+# async def get_all_permissions():
+#     conn = await get_db_connection()
+#     async with conn.cursor(aiomysql.DictCursor) as cursor:
+#         await cursor.execute("SELECT * FROM permission WHERE status = 1")
+#         permissions = await cursor.fetchall()
+#     conn.close()
+#     return {"permissions": permissions}
+
+
 async def get_all_permissions():
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
         await cursor.execute("SELECT * FROM permission WHERE status = 1")
         permissions = await cursor.fetchall()
     conn.close()
-    return {"permissions": permissions}
+    return permissions  # <-- return plain list, not wrapped in dict
+
 
 
 # -------------------------
