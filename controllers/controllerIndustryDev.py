@@ -1,5 +1,6 @@
 import datetime
 from db import get_db_connection  # async connection
+import aiomysql
 
 # -------------------------
 # Fetch all industries
@@ -10,12 +11,12 @@ async def get_all_industries():
     try:
         if conn_is_pool:
             async with conn.acquire() as connection:
-                async with connection.cursor(dictionary=True) as cursor:
+                async with connection.cursor(aiomysql.DictCursor) as cursor:
                     await cursor.execute("SELECT * FROM industry_development")
                     rows = await cursor.fetchall()
                     return rows
         else:
-            async with conn.cursor(dictionary=True) as cursor:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute("SELECT * FROM industry_development")
                 rows = await cursor.fetchall()
                 return rows
@@ -33,12 +34,12 @@ async def get_industry_by_id(industry_id: int):
         query = "SELECT * FROM industry_development WHERE id=%s"
         if conn_is_pool:
             async with conn.acquire() as connection:
-                async with connection.cursor(dictionary=True) as cursor:
+                async with connection.cursor(aiomysql.DictCursor) as cursor:
                     await cursor.execute(query, (industry_id,))
                     row = await cursor.fetchone()
                     return row
         else:
-            async with conn.cursor(dictionary=True) as cursor:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute(query, (industry_id,))
                 row = await cursor.fetchone()
                 return row
@@ -125,7 +126,7 @@ async def update_industry(industry_id: int, data: dict):
     try:
         if conn_is_pool:
             async with conn.acquire() as connection:
-                async with connection.cursor(dictionary=True) as cursor:
+                async with connection.cursor(aiomysql.DictCursor) as cursor:
                     await cursor.execute("SELECT created_at FROM industry_development WHERE id=%s", (industry_id,))
                     row = await cursor.fetchone()
                     if not row:
@@ -151,7 +152,7 @@ async def update_industry(industry_id: int, data: dict):
                     await connection.commit()
                     return {"id": industry_id, **data, "created_at": created_at, "updated_at": now}
         else:
-            async with conn.cursor(dictionary=True) as cursor:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute("SELECT created_at FROM industry_development WHERE id=%s", (industry_id,))
                 row = await cursor.fetchone()
                 if not row:
@@ -211,12 +212,12 @@ async def get_all_industries_public():
     try:
         if conn_is_pool:
             async with conn.acquire() as connection:
-                async with connection.cursor(dictionary=True) as cursor:
+                async with connection.cursor(aiomysql.DictCursor) as cursor:
                     await cursor.execute("SELECT * FROM industry_development WHERE status=1")
                     rows = await cursor.fetchall()
                     return rows
         else:
-            async with conn.cursor(dictionary=True) as cursor:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute("SELECT * FROM industry_development WHERE status=1")
                 rows = await cursor.fetchall()
                 return rows
