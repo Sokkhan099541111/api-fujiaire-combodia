@@ -6,7 +6,7 @@ router = APIRouter(prefix="/api/gallery", tags=["Gallery"])
 # ----------------------------
 # CREATE / UPLOAD IMAGE
 # ----------------------------
-@router.post("/")
+@router.post("/create")
 async def create_gallery(
     file: UploadFile = File(...),
     user_id: int = Form(...),
