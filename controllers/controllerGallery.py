@@ -1,6 +1,7 @@
 import os
 import shutil
 import datetime
+import aiomysql
 from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form
 from fastapi.responses import JSONResponse
@@ -27,27 +28,19 @@ async def create_gallery(file: UploadFile, user_id: int, image_id: Optional[int]
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        # Insert DB record
+        query = """
+            INSERT INTO gallery (path, image_id, user_id, status, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+
         if conn_is_pool:
             async with db.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    await cursor.execute(
-                        """
-                        INSERT INTO gallery (path, image_id, user_id, status, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        """,
-                        (filename, image_id, user_id, 1, now, now)
-                    )
+                    await cursor.execute(query, (filename, image_id, user_id, 1, now, now))
                     await conn.commit()
         else:
             async with db.cursor() as cursor:
-                await cursor.execute(
-                    """
-                    INSERT INTO gallery (path, image_id, user_id, status, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    """,
-                    (filename, image_id, user_id, 1, now, now)
-                )
+                await cursor.execute(query, (filename, image_id, user_id, 1, now, now))
                 await db.commit()
 
         return {"message": "Upload successful", "file": filename}
@@ -65,7 +58,7 @@ async def create_gallery(file: UploadFile, user_id: int, image_id: Optional[int]
 # ----------------------------
 # GET ALL GALLERY
 # ----------------------------
-@router.get("/gallery")
+@router.get("/")
 async def get_all_gallery():
     db = await get_db_connection()
     conn_is_pool = hasattr(db, "acquire")
@@ -75,11 +68,11 @@ async def get_all_gallery():
         query = "SELECT * FROM gallery WHERE status = 1"
         if conn_is_pool:
             async with db.acquire() as conn:
-                async with conn.cursor(dictionary=True) as cursor:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
                     await cursor.execute(query)
                     rows = await cursor.fetchall()
         else:
-            async with db.cursor(dictionary=True) as cursor:
+            async with db.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute(query)
                 rows = await cursor.fetchall()
     finally:
@@ -92,7 +85,7 @@ async def get_all_gallery():
 # ----------------------------
 # GET BY ID
 # ----------------------------
-@router.get("/gallery/{gallery_id}")
+@router.get("/{gallery_id}")
 async def get_gallery_by_id(gallery_id: int):
     db = await get_db_connection()
     conn_is_pool = hasattr(db, "acquire")
@@ -101,11 +94,11 @@ async def get_gallery_by_id(gallery_id: int):
         query = "SELECT * FROM gallery WHERE id = %s"
         if conn_is_pool:
             async with db.acquire() as conn:
-                async with conn.cursor(dictionary=True) as cursor:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
                     await cursor.execute(query, (gallery_id,))
                     row = await cursor.fetchone()
         else:
-            async with db.cursor(dictionary=True) as cursor:
+            async with db.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute(query, (gallery_id,))
                 row = await cursor.fetchone()
     finally:
@@ -120,7 +113,7 @@ async def get_gallery_by_id(gallery_id: int):
 # ----------------------------
 # UPDATE GALLERY
 # ----------------------------
-@router.put("/gallery/{gallery_id}")
+@router.put("/{gallery_id}")
 async def update_gallery(
     gallery_id: int,
     image_id: int = Form(None),
@@ -162,19 +155,18 @@ async def update_gallery(
 # ----------------------------
 # SOFT DELETE GALLERY
 # ----------------------------
-@router.delete("/gallery/{gallery_id}")
+@router.delete("/{gallery_id}")
 async def delete_gallery(gallery_id: int):
     db = await get_db_connection()
     conn_is_pool = hasattr(db, "acquire")
 
     try:
-        # Get file path
         query = "SELECT path FROM gallery WHERE id = %s"
         file_path = None
 
         if conn_is_pool:
             async with db.acquire() as conn:
-                async with conn.cursor(dictionary=True) as cursor:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
                     await cursor.execute(query, (gallery_id,))
                     row = await cursor.fetchone()
                     if row:
@@ -182,7 +174,7 @@ async def delete_gallery(gallery_id: int):
                         await cursor.execute("UPDATE gallery SET status = 0 WHERE id = %s", (gallery_id,))
                         await conn.commit()
         else:
-            async with db.cursor(dictionary=True) as cursor:
+            async with db.cursor(aiomysql.DictCursor) as cursor:
                 await cursor.execute(query, (gallery_id,))
                 row = await cursor.fetchone()
                 if row:
