@@ -38,7 +38,7 @@ async def create(request: Request):
     return await controller.create_industry(data)
 
 
-@router.put("/{industry_id}", dependencies=[Depends(require_permission("Update Industries"))])
+@router.put("/update/{industry_id}", dependencies=[Depends(require_permission("Update Industries"))])
 async def update(industry_id: int, request: Request):
     data = await request.json()
     return await controller.update_industry(industry_id, data)
