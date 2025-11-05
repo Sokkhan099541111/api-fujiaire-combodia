@@ -1,17 +1,23 @@
 import datetime
 import aiomysql
-from db import get_db_connection  # returns connection pool
+from db import get_db_connection  # should return a connection pool
 
 
+# -------------------------
+# Fetch all permissions
+# -------------------------
 async def get_all_permissions():
     pool = await get_db_connection()
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute("SELECT * FROM permission WHERE status = 1")
             rows = await cursor.fetchall()
-    return rows
+            return {"permissions": rows}
 
 
+# -------------------------
+# Fetch by ID
+# -------------------------
 async def get_permission_by_id(permission_id: int):
     pool = await get_db_connection()
     async with pool.acquire() as conn:
@@ -21,16 +27,21 @@ async def get_permission_by_id(permission_id: int):
                 (permission_id,)
             )
             row = await cursor.fetchone()
+
     if not row:
         return {"error": "Permission not found"}
     return row
 
 
+# -------------------------
+# Create new permission
+# -------------------------
 async def create_permission(data: dict):
     pool = await get_db_connection()
     async with pool.acquire() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
-            now = datetime.datetime.now()
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
             await cursor.execute("""
                 INSERT INTO permission (name, status, created_at, updated_at)
                 VALUES (%s, %s, %s, %s)
@@ -40,18 +51,25 @@ async def create_permission(data: dict):
                 now,
                 now
             ))
+
             await conn.commit()
             permission_id = cursor.lastrowid
 
     return {
-        "id": permission_id,
-        "name": data.get("name"),
-        "status": data.get("status", 1),
-        "created_at": now,
-        "updated_at": now
+        "message": "Permission created successfully",
+        "data": {
+            "id": permission_id,
+            "name": data.get("name"),
+            "status": data.get("status", 1),
+            "created_at": now,
+            "updated_at": now
+        }
     }
 
 
+# -------------------------
+# Update permission
+# -------------------------
 async def update_permission(permission_id: int, data: dict):
     pool = await get_db_connection()
     async with pool.acquire() as conn:
@@ -61,7 +79,8 @@ async def update_permission(permission_id: int, data: dict):
             if not row:
                 return {"error": "Permission not found"}
 
-            updated_at = datetime.datetime.now()
+            updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
             await cursor.execute("""
                 UPDATE permission
                 SET name = %s, status = %s, updated_at = %s
@@ -75,14 +94,20 @@ async def update_permission(permission_id: int, data: dict):
             await conn.commit()
 
     return {
-        "id": permission_id,
-        "name": data.get("name", row["name"]),
-        "status": data.get("status", row["status"]),
-        "created_at": row["created_at"],
-        "updated_at": updated_at
+        "message": "Permission updated successfully",
+        "data": {
+            "id": permission_id,
+            "name": data.get("name", row["name"]),
+            "status": data.get("status", row["status"]),
+            "created_at": row["created_at"],
+            "updated_at": updated_at
+        }
     }
 
 
+# -------------------------
+# Soft delete permission
+# -------------------------
 async def delete_permission(permission_id: int):
     pool = await get_db_connection()
     async with pool.acquire() as conn:
@@ -91,10 +116,15 @@ async def delete_permission(permission_id: int):
             if not await cursor.fetchone():
                 return {"error": "Permission not found"}
 
+            updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
             await cursor.execute(
                 "UPDATE permission SET status = 0, updated_at = %s WHERE id = %s",
-                (datetime.datetime.now(), permission_id)
+                (updated_at, permission_id)
             )
             await conn.commit()
 
-    return {"message": f"Permission {permission_id} soft-deleted successfully"}
+    return {
+        "message": f"Permission {permission_id} soft-deleted successfully",
+        "deleted_at": updated_at
+    }
