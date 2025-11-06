@@ -41,7 +41,7 @@ async def get_permission_by_id(permission_id: int):
 
     if not permission:
         return {"error": "Permission not found"}
-    return {"permission": permission}
+    return permission
 
 
 # -------------------------
