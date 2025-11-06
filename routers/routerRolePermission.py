@@ -135,4 +135,4 @@ async def get_user_permissions(user_id: int, user=Depends(get_current_user)):
         if db and not conn_is_pool:
             await db.ensure_closed() if hasattr(db, "ensure_closed") else db.close()
 
-    return {"permissions": result}
+    return  result
