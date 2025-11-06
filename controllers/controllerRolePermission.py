@@ -1,57 +1,82 @@
-import datetime
-from db import get_db_connection  # returns aiomysql connection
+# routes/role_permission_router.py
+from fastapi import APIRouter, Depends, HTTPException, Request
+from utils.jwt_handler import get_current_user
+from db import get_db_connection
 import aiomysql
 
+router = APIRouter(prefix="/api/role-permissions", tags=["role_permissions"])
 
-async def assign_permissions_to_user(user_id: int, permission_ids: list):
+
+# ---------------------------------------
+# Permission dependency
+# ---------------------------------------
+def require_permission(permission: str):
+    def permission_checker(user=Depends(get_current_user)):
+        if permission not in user.get("permissions", []):
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return user
+    return permission_checker
+
+
+# ---------------------------------------
+# Assign permissions to user
+# ---------------------------------------
+@router.put("/assign/{user_id}")
+async def assign_permissions_to_user(
+    user_id: int,
+    request: Request,
+    user=Depends(require_permission("Update Role Permissions")),
+):
+    data = await request.json()
+    permission_ids = data.get("permission_id", [])
+
     if not permission_ids:
-        return {"error": "No permission_ids provided"}
+        raise HTTPException(status_code=400, detail="permission_id is required")
 
-    conn = await get_db_connection()  # directly a Connection
-    cursor = await conn.cursor(aiomysql.DictCursor)
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        try:
+            # Remove old permissions
+            await cursor.execute("DELETE FROM user_permission WHERE user_id=%s", (user_id,))
 
-    try:
-        # Get existing role_permission IDs
-        format_strings = ",".join(["%s"] * len(permission_ids))
-        await cursor.execute(
-            f"SELECT id, permission_id FROM role_permission WHERE permission_id IN ({format_strings})",
-            tuple(permission_ids)
-        )
-        role_permission_rows = await cursor.fetchall()
-        if not role_permission_rows:
-            return {"error": "No matching role_permission found"}
-
-        role_permission_map = {row["permission_id"]: row["id"] for row in role_permission_rows}
-        role_permission_ids = list(role_permission_map.values())
-
-        # Get already assigned permissions
-        await cursor.execute(
-            "SELECT permission_id FROM user_permission WHERE user_id=%s AND status=1",
-            (user_id,)
-        )
-        existing_rows = await cursor.fetchall()
-        existing = {row["permission_id"] for row in existing_rows}
-
-        now = datetime.datetime.utcnow()
-        assigned = []
-
-        for perm_id in permission_ids:
-            rp_id = role_permission_map.get(perm_id)
-            if rp_id and perm_id not in existing:
+            # Add new permissions
+            for pid in permission_ids:
                 await cursor.execute(
-                    "INSERT INTO user_permission (user_id, permission_id, status, created_at, updated_at) VALUES (%s, %s, %s, %s, %s)",
-                    (user_id, rp_id, 1, now, now)
+                    "INSERT INTO user_permission (user_id, permission_id) VALUES (%s, %s)",
+                    (user_id, pid),
                 )
-                assigned.append(rp_id)
 
-        skipped = [role_permission_map[pid] for pid in existing if pid in role_permission_map]
-        await conn.commit()
+            await conn.commit()
 
-    except Exception as e:
-        await conn.rollback()
-        return {"error": str(e)}
-    finally:
-        await cursor.close()
-        conn.close()  # or await conn.ensure_closed() if needed
+        except Exception as e:
+            await conn.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
 
-    return {"user_id": user_id, "assigned_permission_ids": assigned, "skipped": skipped}
+        finally:
+            conn.close()
+
+    return {"user_id": user_id, "assigned_permissions": permission_ids}
+
+
+# ---------------------------------------
+# Get permissions assigned to a user
+# ---------------------------------------
+@router.get("/user/{user_id}")
+async def get_user_permissions(user_id: int, user=Depends(get_current_user)):
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        # Get all active permissions
+        await cursor.execute("SELECT id, name FROM permission WHERE status=1")
+        all_permissions = await cursor.fetchall()
+
+        # Get permissions assigned to this user
+        await cursor.execute("SELECT permission_id FROM user_permission WHERE user_id=%s", (user_id,))
+        assigned_rows = await cursor.fetchall()
+        assigned_ids = {row["permission_id"] for row in assigned_rows}
+
+        # Add 'assigned' flag
+        for perm in all_permissions:
+            perm["assigned"] = perm["id"] in assigned_ids
+
+    conn.close()
+    return all_permissions
