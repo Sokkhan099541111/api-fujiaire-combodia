@@ -35,7 +35,6 @@ origins = [
     'http://172.28.96.1:5173',
     "http://10.90.46.216:5173",
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
     "https://backend.fujiairecambodia.com",
     "https://demo.fujiairecambodia.com"
 ]
