@@ -145,3 +145,12 @@ async def set_banner_type(banner_id: int, banner_type: str):
     query = "UPDATE banner SET type = %s WHERE id = %s"
     await execute_query(query, (banner_type, banner_id), commit=True)
     return {"message": f"Banner {banner_id} type set to {banner_type}"}
+
+async def get_all_banners_public():
+    query = """
+        SELECT b.*, g.image_id AS gallery_image
+        FROM banner b
+        LEFT JOIN gallery g ON b.image_id = g.id
+        WHERE b.status = 1
+    """
+    return await execute_query(query, fetchall=True)
