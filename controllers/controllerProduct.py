@@ -409,3 +409,154 @@ async def update_product_new(product_id: int, data: dict):
 
         finally:
             conn.close()
+
+async def get_all_new_products_public():
+   
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        await cursor.execute("""
+            SELECT 
+                p.id AS product_id,
+                p.name AS product_name,
+                p.detail,
+                p.status,
+                p.new,
+                p.created_at,
+                p.updated_at,
+                p.category_id,
+                p.image_id,
+                p.path AS primary_path,
+                p.user_id,
+
+                ps.spicification_id,
+                s.title AS spec_title,
+                s.descriptions AS spec_description,
+
+                pi.id AS product_image_id,
+                pi.image_path
+            FROM product p
+            LEFT JOIN product_spicification ps ON ps.product_id = p.id
+            LEFT JOIN spicification s ON s.id = ps.spicification_id
+            LEFT JOIN product_images pi ON pi.product_id = p.id
+            WHERE p.status = 1 AND p.new = 1
+            ORDER BY p.id DESC
+        """)
+        rows = await cursor.fetchall()
+
+    await conn.ensure_closed()
+
+    products = {}
+    for row in rows:
+        pid = row["product_id"]
+        if pid not in products:
+            products[pid] = {
+                "id": pid,
+                "name": row["product_name"],
+                "detail": row["detail"],
+                "status": row["status"],
+                "new": row["new"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "category_id": row["category_id"],
+                "image_id": row["image_id"],
+                "primary_path": row["primary_path"],
+                "user_id": row["user_id"],
+                "spicifications": [],
+                "images": []
+            }
+
+        # Add specification
+        if row["spicification_id"]:
+            spec_obj = {
+                "id": row["spicification_id"],
+                "title": row.get("spec_title"),
+                "description": row.get("spec_description")
+            }
+            if spec_obj not in products[pid]["spicifications"]:
+                products[pid]["spicifications"].append(spec_obj)
+
+        # Add image
+        if row["product_image_id"]:
+            img_obj = {
+                "id": row["product_image_id"],
+                "path": row["image_path"]
+            }
+            if img_obj not in products[pid]["images"]:
+                products[pid]["images"].append(img_obj)
+
+    return list(products.values())
+
+async def get_all_products_by_category_public(category: str):
+    
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        await cursor.execute("""
+            SELECT 
+                p.id AS product_id,
+                p.name AS product_name,
+                p.detail,
+                p.status,
+                p.created_at,
+                p.updated_at,
+                p.category_id,
+                p.image_id,
+                p.path AS primary_path,
+                p.user_id,
+                
+                ps.spicification_id,
+                s.title AS spec_title,
+                s.descriptions AS spec_description,
+
+                pi.id AS product_image_id,
+                pi.image_path
+            FROM product p
+            LEFT JOIN product_spicification ps ON ps.product_id = p.id
+            LEFT JOIN spicification s ON s.id = ps.spicification_id
+            LEFT JOIN product_images pi ON pi.product_id = p.id
+            WHERE p.status = 1 AND p.category_id = %s
+            ORDER BY p.id DESC
+        """, (category,))
+        rows = await cursor.fetchall()
+
+    await conn.ensure_closed()
+
+    # ✅ Build structured response
+    products = {}
+    for row in rows:
+        pid = row["product_id"]
+        if pid not in products:
+            products[pid] = {
+                "id": pid,
+                "name": row["product_name"],
+                "detail": row["detail"],
+                "status": row["status"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "category_id": row["category_id"],
+                "image_id": row["image_id"],
+                "primary_path": row["primary_path"],
+                "user_id": row["user_id"],
+                "spicifications": [],
+                "images": []
+            }
+
+        # ✅ Add specification
+        if row["spicification_id"]:
+            spec_obj = {
+                "id": row["spicification_id"],
+                "title": row.get("spec_title"),
+                "description": row.get("spec_description")
+            }
+            if spec_obj not in products[pid]["spicifications"]:
+                products[pid]["spicifications"].append(spec_obj)
+
+        # ✅ Add image
+        if row["product_image_id"]:
+            img_obj = {
+                "id": row["product_image_id"],
+                "path": row["image_path"]
+            }
+            if img_obj not in products[pid]["images"]:
+                products[pid]["images"].append(img_obj)
+
+    return list(products.values())
