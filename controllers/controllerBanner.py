@@ -154,3 +154,5 @@ async def get_all_banners_public():
         WHERE b.status = 1
     """
     return await execute_query(query, fetchall=True)
+
+# here ends controllerBanner.py
