@@ -38,6 +38,6 @@ async def update_gallery(
 # ----------------------------
 # DELETE GALLERY (soft delete)
 # ----------------------------
-@router.delete("/{gallery_id}")
+@router.delete("/delete/{gallery_id}")
 async def delete_gallery(gallery_id: int):
     return await controllerGallery.delete_gallery(gallery_id)
