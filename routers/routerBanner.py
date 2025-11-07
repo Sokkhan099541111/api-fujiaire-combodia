@@ -63,11 +63,11 @@ async def set_banner_type(banner_id: int, request: Request):
 # -----------------------------
 # PUBLIC ROUTES (No auth)
 # -----------------------------
-@router.get("/public")
+@router.get("/all/public")
 async def get_all_public():
     return await controllerBanner.get_all_banners_public()
 
 
-@router.get("/public/{banner_type}")
+@router.get("/all/public/{banner_type}")
 async def get_public_by_type(banner_type: int):
     return await controllerBanner.get_banner_by_type(banner_type)
