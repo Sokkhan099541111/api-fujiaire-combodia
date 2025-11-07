@@ -320,3 +320,92 @@ async def get_all_products_public():
 
     await conn.ensure_closed()
     return list(products.values())
+
+
+
+# ------------------------------
+# ✅ Update product category only
+# ------------------------------
+async def update_product_category(product_id: int, data: dict):
+    """
+    Update only the 'product_category' field for a product.
+    """
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        try:
+            # Check if product exists
+            await cursor.execute("SELECT id FROM product WHERE id = %s", (product_id,))
+            row = await cursor.fetchone()
+            if not row:
+                return {"success": False, "error": "Product not found"}
+
+            category = data.get("product_category")
+            if category is None:
+                return {"success": False, "error": "'product_category' is required"}
+
+            # Update product category
+            await cursor.execute("""
+                UPDATE product 
+                SET product_category = %s,
+                    updated_at = %s
+                WHERE id = %s
+            """, (category, datetime.datetime.utcnow(), product_id))
+            
+            await conn.commit()
+            return {
+                "success": True,
+                "id": product_id,
+                "product_category": category,
+                "message": "Product category updated successfully"
+            }
+
+        except Exception as e:
+            await conn.rollback()
+            return {"success": False, "error": str(e)}
+
+        finally:
+            conn.close()
+
+
+# ------------------------------
+# ✅ Update 'new' field only
+# ------------------------------
+async def update_product_new(product_id: int, data: dict):
+    """
+    Update only the 'new' field for a product.
+    """
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        try:
+            # Check if product exists
+            await cursor.execute("SELECT id FROM product WHERE id = %s", (product_id,))
+            row = await cursor.fetchone()
+            if not row:
+                return {"success": False, "error": "Product not found"}
+
+            new_status = data.get("new")
+            if new_status is None:
+                return {"success": False, "error": "'new' field is required"}
+
+            # Update 'new' field
+            await cursor.execute("""
+                UPDATE product 
+                SET new = %s,
+                    updated_at = %s
+                WHERE id = %s
+            """, (new_status, datetime.datetime.utcnow(), product_id))
+            
+            await conn.commit()
+            return {
+                "success": True,
+                "id": product_id,
+                "new": new_status,
+                "message": "Product 'new' status updated successfully"
+            }
+
+        except Exception as e:
+            await conn.rollback()
+            return {"success": False, "error": str(e)}
+
+        finally:
+            conn.close()
