@@ -38,7 +38,7 @@ async def create_banner(request: Request):
     return await controllerBanner.create_banner(data)
 
 
-@router.put("/{banner_id}", dependencies=[Depends(require_permission("Update banners"))])
+@router.put("/update/{banner_id}", dependencies=[Depends(require_permission("Update banners"))])
 async def update_banner(banner_id: int, request: Request):
     data = await request.json()
     return await controllerBanner.update_banner(banner_id, data)
