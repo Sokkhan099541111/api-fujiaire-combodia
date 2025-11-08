@@ -31,7 +31,6 @@ async def get_all_banners():
         SELECT b.*, g.image_id AS gallery_image
         FROM banner b
         LEFT JOIN gallery g ON b.image_id = g.id
-        WHERE b.status = 1
     """
     return await execute_query(query, fetchall=True)
 

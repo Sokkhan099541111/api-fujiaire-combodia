@@ -44,7 +44,7 @@ async def update_banner(banner_id: int, request: Request):
     return await controllerBanner.update_banner(banner_id, data)
 
 
-@router.delete("/{banner_id}", dependencies=[Depends(require_permission("Delete banners"))])
+@router.put("/delete/{banner_id}", dependencies=[Depends(require_permission("Delete banners"))])
 async def delete_banner(banner_id: int):
     return await controllerBanner.delete_banner(banner_id)
 
