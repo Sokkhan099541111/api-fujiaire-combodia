@@ -149,3 +149,41 @@ async def get_choose_us_by_id_public(choose_id: int):
         return row
     finally:
         conn.close()
+
+
+async def get_process_public(choose_id: int, data: dict):
+    conn = await get_db_connection()
+    try:
+        async with conn.cursor(aiomysql.DictCursor) as cursor:
+            # ✅ Check if record exists
+            await cursor.execute("SELECT id FROM choose_us WHERE id = %s", (choose_id,))
+            row = await cursor.fetchone()
+            if not row:
+                return {"success": False, "error": "choose us not found"}
+
+            # ✅ Update only 'our_process' field
+            await cursor.execute("""
+                UPDATE choose_us 
+                SET our_process = %s,
+                    updated_at = %s
+                WHERE id = %s
+            """, (
+                data.get("our_process"),
+                datetime.datetime.utcnow(),
+                choose_id
+            ))
+
+            await conn.commit()
+
+            return {
+                "success": True,
+                "id": choose_id,
+                "our_process": data.get("our_process")
+            }
+
+    except Exception as e:
+        await conn.rollback()
+        return {"success": False, "error": str(e)}
+
+    finally:
+        conn.close()
