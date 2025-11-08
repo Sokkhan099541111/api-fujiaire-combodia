@@ -29,7 +29,7 @@ async def update(product_id: int, request: Request, user=Depends(require_permiss
     data = await request.json()
     return await controllerProduct.update_product(product_id, data)
 
-@router.delete("/delete/{product_id}")
+@router.put("/delete/{product_id}")
 async def delete(product_id: int, user=Depends(require_permission("Delete Products"))):
     return await controllerProduct.delete_product(product_id)
 

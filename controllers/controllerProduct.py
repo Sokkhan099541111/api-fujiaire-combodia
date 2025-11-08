@@ -27,7 +27,6 @@ async def get_all_products():
             FROM product p
             LEFT JOIN product_spicification ps ON ps.product_id = p.id
             LEFT JOIN product_images pi ON pi.product_id = p.id
-            WHERE p.status = 1
             ORDER BY p.id
         """)
         rows = await cursor.fetchall()
