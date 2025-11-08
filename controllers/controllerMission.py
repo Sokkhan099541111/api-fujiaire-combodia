@@ -6,7 +6,7 @@ from db import get_db_connection
 async def get_all_missions():
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
-        await cursor.execute("SELECT * FROM mission WHERE status = 1")
+        await cursor.execute("SELECT * FROM mission ORDER BY id DESC")
         missions = await cursor.fetchall()
     conn.close()
     return missions

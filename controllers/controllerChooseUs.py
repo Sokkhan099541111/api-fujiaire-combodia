@@ -10,7 +10,7 @@ async def get_all_choose_us():
     conn = await get_db_connection()
     try:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
-            await cursor.execute("SELECT * FROM choose_us WHERE status = 1 ORDER BY id DESC")
+            await cursor.execute("SELECT * FROM choose_us ORDER BY id DESC")
             rows = await cursor.fetchall()
         return rows
     except Exception as e:
