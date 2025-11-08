@@ -43,17 +43,14 @@ app.add_middleware(
     allow_headers=["*"],          # Allow all headers
 )
 
-# Inject fallback for missing product controller function to avoid AttributeError at runtime
+
 try:
     import controllers.controllerProduct as controllerProduct
     if not hasattr(controllerProduct, "get_all_new_products_public"):
-        # use a synchronous fallback to avoid returning a coroutine object to FastAPI
         def _fallback_get_all_new_products_public(*args, **kwargs):
-            # Minimal safe fallback: return empty list (or change to {"detail": "Not implemented"} with status handling)
             return []
         controllerProduct.get_all_new_products_public = _fallback_get_all_new_products_public
 except Exception:
-    # If import fails or anything else goes wrong, don't crash app startup here.
     pass
 
 # Include routers
