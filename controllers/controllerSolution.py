@@ -8,7 +8,7 @@ from db import get_db_connection  # returns aiomysql.Connection
 async def get_all_solutions():
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
-        await cursor.execute("SELECT * FROM solution WHERE status = 1")
+        await cursor.execute("SELECT * FROM solution")
         rows = await cursor.fetchall()
     conn.close()
     return rows
