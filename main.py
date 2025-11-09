@@ -29,6 +29,14 @@ from routers import (
 
 app = FastAPI()
 
+# Request logging middleware for debugging
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"➡️ {request.method} {request.url}")
+    response = await call_next(request)
+    print(f"⬅️ {response.status_code}")
+    return response
+
 origins = [
     "http://localhost:5173",
     "https://backend.fujiairecambodia.com",
@@ -52,6 +60,11 @@ try:
         controllerProduct.get_all_new_products_public = _fallback_get_all_new_products_public
 except Exception:
     pass
+
+# Fallback OPTIONS handler for all routes (preflight)
+@app.options("/{rest_of_path:path}")
+async def preflight_handler():
+    return {}
 
 # Include routers
 app.include_router(routerUsers.router)
