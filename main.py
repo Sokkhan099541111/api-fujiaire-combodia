@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+# ✅ Add this import for DB pool
+from db import init_db_pool, pool
 
 # Router imports
 from routers import (
@@ -60,6 +62,21 @@ try:
 except Exception:
     # If import fails or anything else goes wrong, don't crash app startup here.
     pass
+
+# ✅ Initialize DB Pool Once
+@app.on_event("startup")
+async def startup_event():
+    await init_db_pool()  # initialize only one pool
+    print("✅ Database pool initialized")
+
+# ✅ Close DB Pool on Shutdown
+@app.on_event("shutdown")
+async def shutdown_event():
+    global pool
+    if pool:
+        pool.close()
+        await pool.wait_closed()
+        print("🧹 Database pool closed cleanly")
 
 # Include routers
 app.include_router(routerUsers.router)
