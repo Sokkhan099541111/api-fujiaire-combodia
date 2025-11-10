@@ -27,7 +27,11 @@ from routers import (
     routerSpicification,
 )
 
-app = FastAPI()
+# app = FastAPI()
+
+# === Create FastAPI App ===
+app = FastAPI(redoc_url=None, docs_url=None, openapi_url=None)
+app.router.redirect_slashes = True  # ✅ Fix trailing slash issues
 
 # Request logging middleware for debugging
 @app.middleware("http")
