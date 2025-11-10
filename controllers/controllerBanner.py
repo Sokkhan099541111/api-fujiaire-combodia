@@ -1,6 +1,6 @@
 import datetime
 import aiomysql
-from db import get_db_connection, release_db_connection
+from db import get_db_connection
 
 # ---------------------------------------------------------------------
 # 🔹 Helper: run query with connection management (auto release)

@@ -31,7 +31,7 @@ async def init_db_pool():
         raise HTTPException(status_code=500, detail=f"Database pool error: {e}")
 
 @asynccontextmanager
-async def get_connection():
+async def get_db_connection():
     global pool
     if pool is None or pool._closed:
         await init_db_pool()
