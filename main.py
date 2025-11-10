@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# === Import Routers ===
+
+# Router imports
 from routers import (
     routerUsers,
     routerAuth,
@@ -26,50 +27,41 @@ from routers import (
     routerSpicification,
 )
 
-# === Initialize App ===
-app = FastAPI(redoc_url=None, docs_url=None, openapi_url=None)
-app.router.redirect_slashes = True  # ✅ Prevents 307 redirect errors for /api/... vs /api...
+app = FastAPI()
 
-# === Request Logging Middleware ===
-@app.middleware("http")
-async def log_requests(request, call_next):
-    print(f"➡️ {request.method} {request.url}")
-    response = await call_next(request)
-    print(f"⬅️ {response.status_code}")
-    return response
-
-# === CORS Configuration ===
 origins = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    'http://172.28.96.1:5173',
+    "http://10.90.46.216:5173",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "https://backend.fujiairecambodia.com",
-    "https://demo.fujiairecambodia.com",
-    "https://fujiaire-combodia-xzwba.ondigitalocean.app",
+    "https://demo.fujiairecambodia.com"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Can set to ["*"] for temporary debugging
+    allow_origins=origins,        # Or ["*"] to allow all
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_methods=["*"],          # Allow all HTTP methods
+    allow_headers=["*"],          # Allow all headers
 )
 
-# === Handle Missing Product Function (Safe Import) ===
+# Inject fallback for missing product controller function to avoid AttributeError at runtime
 try:
     import controllers.controllerProduct as controllerProduct
     if not hasattr(controllerProduct, "get_all_new_products_public"):
+        # use a synchronous fallback to avoid returning a coroutine object to FastAPI
         def _fallback_get_all_new_products_public(*args, **kwargs):
+            # Minimal safe fallback: return empty list (or change to {"detail": "Not implemented"} with status handling)
             return []
         controllerProduct.get_all_new_products_public = _fallback_get_all_new_products_public
-except Exception as e:
-    print(f"⚠️ Product controller import issue: {e}")
+except Exception:
+    # If import fails or anything else goes wrong, don't crash app startup here.
+    pass
 
-# === OPTIONS Preflight Handler (Fix OPTIONS Repeated Calls) ===
-@app.options("/{rest_of_path:path}")
-async def preflight_handler():
-    return {}
-
-# === Include All Routers (No Duplicates) ===
+# Include routers
 app.include_router(routerUsers.router)
 app.include_router(routerAuth.router)
 app.include_router(routerRole.router)
@@ -90,11 +82,16 @@ app.include_router(routerWarranty.router)
 app.include_router(routerPermission.router)
 app.include_router(routerRolePermission.router)
 app.include_router(routerSpicification.router)
-
-# === Static Files for Uploads ===
+app.include_router(routerGallery.router)
 app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# === Root Endpoint ===
+
+# Include your gallery API router
+
+app.include_router(routerGallery.router, prefix="/api/gallery", tags=["Gallery"])
+
+
+
 @app.get("/")
 def root():
     return {"message": "API is running securely 🎉"}

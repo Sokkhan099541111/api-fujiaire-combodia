@@ -1,6 +1,6 @@
 import datetime
 import aiomysql
-from db import get_db_connection
+from db import get_db_connection, release_db_connection
 
 # ---------------------------------------------------------------------
 # 🔹 Helper: run query with connection management (auto release)
@@ -17,11 +17,7 @@ async def execute_query(query: str, params=None, fetchone=False, fetchall=False,
             if fetchall:
                 return await cursor.fetchall()
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
-
+        await release_db_connection(conn)   
 
 # ---------------------------------------------------------------------
 # 🔹 Get all active banners
