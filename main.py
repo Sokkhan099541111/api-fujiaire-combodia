@@ -43,7 +43,7 @@ origins = [
     "http://localhost:5173",
     "https://backend.fujiairecambodia.com",
     "https://demo.fujiairecambodia.com",
-    "https://fujiaire-combodia-xzwba.ondigitalocean.app",  # ✅ App Platform domain
+    "https://fujiaire-combodia-xzwba.ondigitalocean.app",
 ]
 
 app.add_middleware(
