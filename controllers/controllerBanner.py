@@ -17,7 +17,11 @@ async def execute_query(query: str, params=None, fetchone=False, fetchall=False,
             if fetchall:
                 return await cursor.fetchall()
     finally:
-        await release_db_connection(conn)   
+        if pool and conn:
+            pool.release(conn)  # ✅ properly release connection to pool
+
+
+           
 
 # ---------------------------------------------------------------------
 # 🔹 Get all active banners
