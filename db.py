@@ -21,7 +21,7 @@ async def init_db_pool():
             db=os.getenv("DB_NAME"),
             port=int(os.getenv("DB_PORT", 3306)),
             autocommit=True,
-            minsize=1,    # fix: minsize <= maxsize
+            minsize=1,    
             maxsize=5,
             charset="utf8mb4"
         )
