@@ -11,11 +11,30 @@ import pymysql
 
 async def get_all_users():
     conn = await get_db_connection()
-    async with conn.cursor(aiomysql.DictCursor) as cursor:
-        await cursor.execute("SELECT * FROM users")
-        rows = await cursor.fetchall()
-    conn.close()
-    return rows
+    try:
+        async with conn.cursor(aiomysql.DictCursor) as cursor:
+            query = """
+                SELECT 
+                    u.id,
+                    u.username,
+                    u.email,
+                    u.status,
+                    u.created_at,
+                    u.updated_at,
+                    r.name AS role_name
+                FROM users AS u
+                LEFT JOIN roles AS r ON u.role_id = r.id
+                ORDER BY u.id DESC
+            """
+            await cursor.execute(query)
+            rows = await cursor.fetchall()
+            return rows
+    except Exception as e:
+        print("❌ Error fetching users:", e)
+        return []
+    finally:
+        conn.close()
+
 
 async def get_user_by_id(user_id: int):
     conn = await get_db_connection()

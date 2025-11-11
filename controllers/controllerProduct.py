@@ -75,6 +75,8 @@ async def get_product_by_id(product_id: int):
                 p.created_at,
                 p.updated_at,
                 p.category_id,
+                p.product_category,
+                p.new,
                 p.image_id,
                 p.path AS primary_path,
                 p.user_id,
@@ -87,7 +89,7 @@ async def get_product_by_id(product_id: int):
             LEFT JOIN product_spicification ps ON ps.product_id = p.id
             LEFT JOIN spicification s ON s.id = ps.spicification_id
             LEFT JOIN product_images pi ON pi.product_id = p.id
-            WHERE p.status = 1 AND p.id = %s
+            AND p.id = %s
         """, (product_id,))
         rows = await cursor.fetchall()
 
