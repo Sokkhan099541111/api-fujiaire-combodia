@@ -23,7 +23,7 @@ async def get_all_users():
                     u.updated_at,
                     r.name AS role_name
                 FROM users AS u
-                LEFT JOIN roles AS r ON u.role_id = r.id
+                LEFT JOIN role AS r ON u.role_id = r.id
                 ORDER BY u.id DESC
             """
             await cursor.execute(query)
