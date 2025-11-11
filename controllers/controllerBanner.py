@@ -17,10 +17,7 @@ async def execute_query(query: str, params=None, fetchone=False, fetchall=False,
             if fetchall:
                 return await cursor.fetchall()
     finally:
-        if pool and conn:
-            pool.release(conn)  # ✅ properly release connection to pool
-
-
+        conn.close()
            
 
 # ---------------------------------------------------------------------
