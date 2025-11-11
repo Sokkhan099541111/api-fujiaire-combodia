@@ -35,7 +35,7 @@ async def init_db_pool():
 async def get_db_connection():
     global pool
     if pool is None or pool._closed:
-        await init_db_pool()  # auto-reconnect if pool was closed
+        await init_db_pool()
 
     try:
         conn = await pool.acquire()
