@@ -102,7 +102,7 @@ async def update_banner(banner_id: int, data: dict):
     query = """
         UPDATE banner
         SET image_id = %s, title = %s, path = %s, user_id = %s,
-            status = %s, created_at = %s, updated_at = %s
+            status = %s, type = %s, created_at = %s, updated_at = %s
         WHERE id = %s
     """
 
@@ -112,6 +112,7 @@ async def update_banner(banner_id: int, data: dict):
         data.get("path"),
         data.get("user_id"),
         data.get("status", 1),
+        data.get("type"),
         existing["created_at"],
         updated_at,
         banner_id,
