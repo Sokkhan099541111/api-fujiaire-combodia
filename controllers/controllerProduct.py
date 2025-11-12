@@ -77,6 +77,64 @@ async def get_all_products():
 # ===============================
 # Get product by ID
 # ===============================
+async def get_product_by_id(product_id: int):
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        await cursor.execute("""
+            SELECT 
+                p.id AS product_id,
+                p.name AS product_name,
+                p.detail,
+                p.status,
+                p.created_at,
+                p.updated_at,
+                p.category_id,
+                p.image_id,
+                p.path AS primary_path,
+                p.user_id,
+                ps.spicification_id,
+                pi.id AS product_image_id,
+                pi.image_path
+            FROM product p
+            LEFT JOIN product_spicification ps ON ps.product_id = p.id
+            LEFT JOIN product_images pi ON pi.product_id = p.id
+            WHERE p.id = %s
+        """, (product_id,))
+        rows = await cursor.fetchall()
+
+    if not rows:
+        await conn.ensure_closed()
+        return None
+
+    # ✅ Use first row to initialize product object
+    product = {
+        "id": rows[0]["product_id"],
+        "name": rows[0]["product_name"],
+        "detail": rows[0]["detail"],
+        "status": rows[0]["status"],
+        "created_at": rows[0]["created_at"],
+        "updated_at": rows[0]["updated_at"],
+        "category_id": rows[0]["category_id"],
+        "image_id": rows[0]["image_id"],
+        "primary_path": rows[0]["primary_path"],
+        "user_id": rows[0]["user_id"],
+        "spicifications": [],
+        "images": []
+    }
+
+    # ✅ Append related specs and images
+    for row in rows:
+        if row["spicification_id"] and row["spicification_id"] not in product["spicifications"]:
+            product["spicifications"].append(row["spicification_id"])
+        if row["product_image_id"]:
+            img_obj = {"id": row["product_image_id"], "path": row["image_path"]}
+            if img_obj not in product["images"]:
+                product["images"].append(img_obj)
+
+    await conn.ensure_closed()
+    return product
+
+
 async def get_product_by_slug(slug: str):
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
