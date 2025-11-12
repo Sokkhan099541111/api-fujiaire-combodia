@@ -174,7 +174,7 @@ async def get_product_by_slug(slug: str):
     product = {
         "id": row["product_id"],
         "name": row["product_name"],
-        "slug": row.get("slug"),
+        "slug": row["slug"],
         "detail": row["detail"],
         "status": row["status"],
         "created_at": row["created_at"],
@@ -357,6 +357,7 @@ async def get_all_products_public():
             SELECT 
                 p.id AS product_id,
                 p.name AS product_name,
+                p.slug,
                 p.detail,
                 p.status,
                 p.created_at,
@@ -386,6 +387,7 @@ async def get_all_products_public():
             products[pid] = {
                 "id": pid,
                 "name": row["product_name"],
+                "slug": row["slug"],
                 "detail": row["detail"],
                 "status": row["status"],
                 "created_at": row["created_at"],
@@ -538,7 +540,7 @@ async def get_all_new_products_public():
             products[pid] = {
                 "id": pid,
                 "name": row["product_name"],
-                "slug": row.get("slug"),  # ✅ safer get
+                "slug": row["slug"],  # ✅ safer get
                 "detail": row["detail"],
                 "status": row["status"],
                 "new": row["new"],
