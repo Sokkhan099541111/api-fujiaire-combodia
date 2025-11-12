@@ -51,6 +51,6 @@ async def delete(industry_id: int):
 # ----------------------------
 # Public routes
 # ----------------------------
-@router.get("/public")
+@router.get("/all/public")
 async def get_all_public():
     return await controller.get_all_industries_public()
