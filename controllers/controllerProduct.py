@@ -174,7 +174,7 @@ async def get_product_by_slug(slug: str):
     product = {
         "id": row["product_id"],
         "name": row["product_name"],
-        "slug": row["slug"],
+        "slug": row.get("slug"),
         "detail": row["detail"],
         "status": row["status"],
         "created_at": row["created_at"],
@@ -541,7 +541,7 @@ async def get_all_new_products_public():
             products[pid] = {
                 "id": pid,
                 "name": row["product_name"],
-                "slug": row["slug"],
+                "slug": row.get("slug"),
                 "detail": row["detail"],
                 "status": row["status"],
                 "new": row["new"],
