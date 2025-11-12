@@ -38,9 +38,9 @@ async def delete(product_id: int, user=Depends(require_permission("Delete Produc
 async def get_all_public():
     return await controllerProduct.get_all_products_public()
 
-@router.get("/all/public/{product_id}")
-async def get_all_public_id(product_id: int):
-    return await controllerProduct.get_product_by_id(product_id)
+@router.get("/all/public/{slug}")
+async def get_all_public_id(slug: str):
+    return await controllerProduct.get_product_by_slug(slug)
 
 
 @router.get("/category/{category}/all/public")

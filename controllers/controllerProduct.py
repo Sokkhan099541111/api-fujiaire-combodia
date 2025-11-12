@@ -1,7 +1,21 @@
 import datetime
 import aiomysql
 from db import get_db_connection  # should return aiomysql connection
+import re
+import unicodedata
 
+
+def slugify(value: str) -> str:
+    value = str(value)
+    # Normalize unicode characters
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    # Lowercase
+    value = value.lower()
+    # Replace unwanted characters with hyphens
+    value = re.sub(r'[^a-z0-9]+', '-', value)
+    # Remove leading/trailing hyphens
+    value = value.strip('-')
+    return value
 
 # ===============================
 # Get all products (admin)
@@ -63,13 +77,14 @@ async def get_all_products():
 # ===============================
 # Get product by ID
 # ===============================
-async def get_product_by_id(product_id: int):
+async def get_product_by_slug(slug: str):
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
         await cursor.execute("""
             SELECT 
                 p.id AS product_id,
                 p.name AS product_name,
+                p.slug,
                 p.detail,
                 p.status,
                 p.created_at,
@@ -89,8 +104,8 @@ async def get_product_by_id(product_id: int):
             LEFT JOIN product_spicification ps ON ps.product_id = p.id
             LEFT JOIN spicification s ON s.id = ps.spicification_id
             LEFT JOIN product_images pi ON pi.product_id = p.id
-            AND p.id = %s
-        """, (product_id,))
+            WHERE p.slug = %s
+        """, (slug,))
         rows = await cursor.fetchall()
 
     if not rows:
@@ -101,6 +116,7 @@ async def get_product_by_id(product_id: int):
     product = {
         "id": row["product_id"],
         "name": row["product_name"],
+        "slug": row["slug"],
         "detail": row["detail"],
         "status": row["status"],
         "created_at": row["created_at"],
@@ -115,7 +131,11 @@ async def get_product_by_id(product_id: int):
 
     for row in rows:
         if row["spicification_id"]:
-            spec_obj = {"id": row["spicification_id"], "title": row.get("spec_title"), "description": row.get("spec_description")}
+            spec_obj = {
+                "id": row["spicification_id"],
+                "title": row.get("spec_title"),
+                "description": row.get("spec_description"),
+            }
             if spec_obj not in product["spicifications"]:
                 product["spicifications"].append(spec_obj)
         if row["product_image_id"]:
@@ -125,6 +145,7 @@ async def get_product_by_id(product_id: int):
 
     await conn.ensure_closed()
     return product
+
 
 
 # ===============================
@@ -138,14 +159,17 @@ async def create_product(data: dict):
             images = [img for img in data.get("images", []) if img.get("path")]
             first_image = images[0] if images else None
 
+            slug = slugify(data.get("name", ""))  # generate slug from name
+
             await cursor.execute("""
                 INSERT INTO product 
-                (category, category_sub, name, image_id, path, detail, user_id, category_id, status, created_at, updated_at)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                (category, category_sub, name, slug, image_id, path, detail, user_id, category_id, status, created_at, updated_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (
                 data.get("category"),
                 data.get("category_sub"),
                 data.get("name"),
+                slug,                          # <-- slug stored here
                 first_image['id'] if first_image else None,
                 first_image['path'] if first_image else None,
                 data.get("detail"),
@@ -167,6 +191,7 @@ async def create_product(data: dict):
             return {
                 "id": product_id,
                 "name": data.get("name"),
+                "slug": slug,                  # <-- include slug in returned data
                 "detail": data.get("detail"),
                 "status": data.get("status", 1),
                 "created_at": now,
@@ -186,6 +211,7 @@ async def create_product(data: dict):
             await conn.ensure_closed()
 
 
+
 # ===============================
 # Update product
 # ===============================
@@ -203,11 +229,14 @@ async def update_product(product_id: int, data: dict):
             images = [img for img in data.get("images", []) if img.get("path")]
             first_image = images[0] if images else None
 
+            slug = slugify(data.get("name", ""))  # generate slug from name
+
             await cursor.execute("""
                 UPDATE product SET
                     category=%s,
                     category_sub=%s,
                     name=%s,
+                    slug=%s,                    -- update slug column
                     image_id=%s,
                     path=%s,
                     detail=%s,
@@ -220,6 +249,7 @@ async def update_product(product_id: int, data: dict):
                 data.get("category"),
                 data.get("category_sub"),
                 data.get("name"),
+                slug,                         # <-- slug here
                 first_image['id'] if first_image else None,
                 first_image['path'] if first_image else None,
                 data.get("detail"),
@@ -239,14 +269,13 @@ async def update_product(product_id: int, data: dict):
                 await cursor.execute("INSERT INTO product_images (product_id, image_path, created_at, updated_at) VALUES (%s,%s,%s,%s)", (product_id, img['path'], updated_at, updated_at))
 
             await conn.commit()
-            return {"id": product_id, **data}
+            return {"id": product_id, **data, "slug": slug}
 
         except Exception as e:
             await conn.rollback()
             return {"error": str(e)}
         finally:
             await conn.ensure_closed()
-
 
 # ===============================
 # Soft delete product
