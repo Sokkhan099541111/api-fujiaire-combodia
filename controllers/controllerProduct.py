@@ -499,7 +499,6 @@ async def update_product_new(product_id: int, data: dict):
             conn.close()
 
 async def get_all_new_products_public():
-   
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
         await cursor.execute("""
@@ -516,11 +515,9 @@ async def get_all_new_products_public():
                 p.image_id,
                 p.path AS primary_path,
                 p.user_id,
-
                 ps.spicification_id,
                 s.title AS spec_title,
                 s.descriptions AS spec_description,
-
                 pi.id AS product_image_id,
                 pi.image_path
             FROM product p
@@ -541,7 +538,7 @@ async def get_all_new_products_public():
             products[pid] = {
                 "id": pid,
                 "name": row["product_name"],
-                "slug": row.get("slug"),
+                "slug": row.get("slug"),  # ✅ safer get
                 "detail": row["detail"],
                 "status": row["status"],
                 "new": row["new"],
@@ -555,7 +552,6 @@ async def get_all_new_products_public():
                 "images": []
             }
 
-        # Add specification
         if row["spicification_id"]:
             spec_obj = {
                 "id": row["spicification_id"],
@@ -565,7 +561,6 @@ async def get_all_new_products_public():
             if spec_obj not in products[pid]["spicifications"]:
                 products[pid]["spicifications"].append(spec_obj)
 
-        # Add image
         if row["product_image_id"]:
             img_obj = {
                 "id": row["product_image_id"],
@@ -575,6 +570,7 @@ async def get_all_new_products_public():
                 products[pid]["images"].append(img_obj)
 
     return list(products.values())
+
 
 async def get_all_products_by_category_public(category: str):
     
