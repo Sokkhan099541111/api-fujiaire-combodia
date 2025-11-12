@@ -15,7 +15,8 @@ def slugify(value: str) -> str:
     value = re.sub(r'[^a-z0-9]+', '-', value)
     # Remove leading/trailing hyphens
     value = value.strip('-')
-    return value
+    # Add .php at the end
+    return value + ".php"
 
 # ===============================
 # Get all products (admin)
