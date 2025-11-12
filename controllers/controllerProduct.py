@@ -509,6 +509,7 @@ async def get_all_new_products_public():
                 p.detail,
                 p.status,
                 p.new,
+                p.slug,
                 p.created_at,
                 p.updated_at,
                 p.category_id,
@@ -540,6 +541,7 @@ async def get_all_new_products_public():
             products[pid] = {
                 "id": pid,
                 "name": row["product_name"],
+                "slug": row["slug"],
                 "detail": row["detail"],
                 "status": row["status"],
                 "new": row["new"],
