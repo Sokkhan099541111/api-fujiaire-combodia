@@ -29,3 +29,12 @@ async def delete(ceo_id: int):
 @router.get("/all/public")
 async def get_all_public():
     return await controller.get_all_ceos_public()
+
+@router.get("/get_testimonial_public/all/public/{publisher_id}")
+async def get_all_by_type_public(publisher_id: int):
+    return await controller.get_testimonial_public(publisher_id)
+
+@router.put("/set-testimonial/{publisher}")
+async def set_testimonial(publisher: int, request: Request):
+    data = await request.json()
+    return await controller.set_testimonial(publisher, data)

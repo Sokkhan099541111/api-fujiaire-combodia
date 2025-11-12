@@ -131,3 +131,41 @@ async def get_all_ceos_public():
         rows = await cursor.fetchall()
     await conn.ensure_closed()
     return rows
+
+
+# ===============================
+# Get CEOs by type (public)
+# ===============================
+async def get_testimonial_public(type_id: int):
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        await cursor.execute("SELECT * FROM profile_ceo WHERE publisher = %s AND status = 1", (type_id,))
+        rows = await cursor.fetchall()
+    await conn.ensure_closed()
+    return rows
+
+# ===============================
+# Set testimonial for CEO
+# ===============================   
+
+async def set_testimonial(publisher: int, data: dict):
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        try:
+            await cursor.execute("""
+                UPDATE profile_ceo SET publisher=%s,
+                WHERE id=%s
+            """, (
+                data.get("publisher"),
+                datetime.datetime.utcnow(),
+                publisher
+            ))
+            await conn.commit()
+            return {"message": f"{publisher}"}
+
+        except Exception as e:
+            await conn.rollback()
+            return {"error": str(e)}
+
+        finally:
+            await conn.ensure_closed()
