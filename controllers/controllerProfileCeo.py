@@ -42,8 +42,8 @@ async def create_ceo(data: dict):
 
             now = datetime.datetime.utcnow()
             await cursor.execute("""
-                INSERT INTO profile_ceo (image_id, path, name, detail, user_id, status, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO profile_ceo (image_id, path, name, detail, user_id,  status, testimonial, testimonialTitle, testimonialDescriptions, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 data.get("image_id"),
                 data.get("path"),
@@ -51,6 +51,9 @@ async def create_ceo(data: dict):
                 data.get("detail"),
                 data.get("user_id"),
                 data.get("status", 1),
+                data.get("testimonial"),
+                data.get("testimonialTitle"),
+                data.get("testimonialDescriptions"),
                 now,
                 now
             ))
@@ -82,7 +85,7 @@ async def update_ceo(ceo_id: int, data: dict):
             updated_at = datetime.datetime.utcnow()
 
             await cursor.execute("""
-                UPDATE profile_ceo SET image_id=%s, path=%s, name=%s, detail=%s, user_id=%s, status=%s, created_at=%s, updated_at=%s
+                UPDATE profile_ceo SET image_id=%s, path=%s, name=%s, detail=%s, user_id=%s, status=%s, testimonial = %s, testimonialTitle = %s, testimonialDescriptions = %s, created_at=%s, updated_at=%s
                 WHERE id=%s
             """, (
                 data.get("image_id"),
