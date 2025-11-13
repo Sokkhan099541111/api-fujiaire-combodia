@@ -34,6 +34,9 @@ async def get_all_products():
                 p.updated_at,
                 p.category_id,
                 p.image_id,
+                p.is_active,
+                p.about_product,
+                p.image_id_about_product,
                 p.path AS primary_path,
                 p.user_id,
                 ps.spicification_id,
@@ -55,6 +58,9 @@ async def get_all_products():
                 "name": row["product_name"],
                 "detail": row["detail"],
                 "status": row["status"],
+                "is_active": row["is_active"],
+                "about_product": row["about_product"],
+                "image_id_about_product": row["image_id_about_product"],
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
                 "category_id": row["category_id"],
@@ -91,6 +97,9 @@ async def get_product_by_id(product_id: int):
                 p.updated_at,
                 p.category_id,
                 p.image_id,
+                p.is_active,
+                p.about_product,
+                p.image_id_about_product,
                 p.path AS primary_path,
                 p.user_id,
                 ps.spicification_id,
@@ -113,6 +122,9 @@ async def get_product_by_id(product_id: int):
         "name": rows[0]["product_name"],
         "detail": rows[0]["detail"],
         "status": rows[0]["status"],
+        "is_active": rows[0]["is_active"],
+        "about_product": rows[0]["about_product"],
+        "image_id_about_product": rows[0]["image_id_about_product"],
         "created_at": rows[0]["created_at"],
         "updated_at": rows[0]["updated_at"],
         "category_id": rows[0]["category_id"],
@@ -150,6 +162,9 @@ async def get_product_by_slug(slug: str):
                 p.updated_at,
                 p.category_id,
                 p.product_category,
+                p.is_active,
+                p.about_product,
+                p.image_id_about_product,
                 p.new,
                 p.image_id,
                 p.path AS primary_path,
@@ -177,6 +192,9 @@ async def get_product_by_slug(slug: str):
         "name": row["product_name"],
         "slug": row["slug"],
         "detail": row["detail"],
+        "is_active": row["is_active"],
+        "about_product": row["about_product"],
+        "image_id_about_product": row["image_id_about_product"],
         "status": row["status"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
@@ -222,12 +240,15 @@ async def create_product(data: dict):
 
             await cursor.execute("""
                 INSERT INTO product 
-                (category, category_sub, name, slug, image_id, path, detail, user_id, category_id, status, created_at, updated_at)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                (category, category_sub, name, slug, is_active, about_product, image_id_about_product, image_id, path, detail, user_id, category_id, status, created_at, updated_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (
                 data.get("category"),
                 data.get("category_sub"),
                 data.get("name"),
+                data.get("is_active"),
+                data.get("about_product"),
+                data.get("image_id_about_product"),
                 slug,                          # <-- slug stored here
                 first_image['id'] if first_image else None,
                 first_image['path'] if first_image else None,
@@ -296,7 +317,10 @@ async def update_product(product_id: int, data: dict):
                     category_sub=%s,
                     name=%s,
                     slug=%s,                    -- update slug column
-                    image_id=%s,
+                    is_active=%s,
+                    about_product=%s,
+                    image_id_about_product=%s,
+                    image_id=%s,         
                     path=%s,
                     detail=%s,
                     user_id=%s,
@@ -308,6 +332,9 @@ async def update_product(product_id: int, data: dict):
                 data.get("category"),
                 data.get("category_sub"),
                 data.get("name"),
+                data.get("is_active"),
+                data.get("about_product"),
+                data.get("image_id_about_product"),
                 slug,                         # <-- slug here
                 first_image['id'] if first_image else None,
                 first_image['path'] if first_image else None,
