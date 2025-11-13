@@ -21,7 +21,8 @@ async def init_db_pool():
             db=os.getenv("DB_NAME"),
             port=int(os.getenv("DB_PORT", 3306)),
             autocommit=True,
-            maxsize=5000000,         
+            # maxsize=5000000,         
+            maxsize=50,         
             charset="utf8mb4"
         )
         print("✅ MySQL connection pool created successfully")
