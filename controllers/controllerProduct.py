@@ -298,29 +298,35 @@ async def create_product(data: dict):
 async def update_product(product_id: int, data: dict):
     conn = await get_db_connection()
     updated_at = datetime.datetime.utcnow()
+
     async with conn.cursor(aiomysql.DictCursor) as cursor:
         try:
+            # Check product exists
             await cursor.execute("SELECT created_at FROM product WHERE id=%s", (product_id,))
             row = await cursor.fetchone()
             if not row:
                 return {"error": "Product not found"}
+
             created_at = row["created_at"]
 
+            # Prepare images
             images = [img for img in data.get("images", []) if img.get("path")]
             first_image = images[0] if images else None
 
-            slug = slugify(data.get("name", ""))  # generate slug from name
+            # Generate slug
+            slug = slugify(data.get("name", ""))
 
+            # ✅ Correct column-value order
             await cursor.execute("""
                 UPDATE product SET
                     category=%s,
                     category_sub=%s,
                     name=%s,
-                    slug=%s,                    -- update slug column
+                    slug=%s,
                     is_active=%s,
                     about_product=%s,
                     image_id_about_product=%s,
-                    image_id=%s,         
+                    image_id=%s,
                     path=%s,
                     detail=%s,
                     user_id=%s,
@@ -332,12 +338,12 @@ async def update_product(product_id: int, data: dict):
                 data.get("category"),
                 data.get("category_sub"),
                 data.get("name"),
-                data.get("is_active"),
+                slug,
+                data.get("is_active", 1),
                 data.get("about_product"),
                 data.get("image_id_about_product"),
-                slug,                         # <-- slug here
-                first_image['id'] if first_image else None,
-                first_image['path'] if first_image else None,
+                first_image["id"] if first_image else None,
+                first_image["path"] if first_image else None,
                 data.get("detail"),
                 data.get("user_id"),
                 data.get("category_id"),
@@ -346,13 +352,21 @@ async def update_product(product_id: int, data: dict):
                 product_id
             ))
 
+            # ✅ Update specification relations
             await cursor.execute("DELETE FROM product_spicification WHERE product_id=%s", (product_id,))
             for spic_id in data.get("spicification_id", []):
-                await cursor.execute("INSERT INTO product_spicification (product_id, spicification_id) VALUES (%s,%s)", (product_id, spic_id))
+                await cursor.execute(
+                    "INSERT INTO product_spicification (product_id, spicification_id) VALUES (%s, %s)",
+                    (product_id, spic_id)
+                )
 
+            # ✅ Update product images
             await cursor.execute("DELETE FROM product_images WHERE product_id=%s", (product_id,))
             for img in images:
-                await cursor.execute("INSERT INTO product_images (product_id, image_path, created_at, updated_at) VALUES (%s,%s,%s,%s)", (product_id, img['path'], updated_at, updated_at))
+                await cursor.execute(
+                    "INSERT INTO product_images (product_id, image_path, created_at, updated_at) VALUES (%s, %s, %s, %s)",
+                    (product_id, img["path"], updated_at, updated_at)
+                )
 
             await conn.commit()
             return {"id": product_id, **data, "slug": slug}
@@ -361,7 +375,8 @@ async def update_product(product_id: int, data: dict):
             await conn.rollback()
             return {"error": str(e)}
         finally:
-            await conn.ensure_closed()
+            conn.close()
+
 
 # ===============================
 # Soft delete product
