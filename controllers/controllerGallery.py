@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from db import get_db_connection  # async aiomysql pool
+from cpanel_uploader import upload_to_cpanel  
 
 router = APIRouter(prefix="/api/gallery", tags=["Gallery"])
 
