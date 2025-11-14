@@ -20,14 +20,22 @@ async def create_gallery(file: UploadFile, user_id: int, image_id: Optional[int]
     db = await get_db_connection()
     conn_is_pool = hasattr(db, "acquire")
     now = datetime.datetime.utcnow()
+
     filename = f"{now.strftime('%Y%m%d%H%M%S')}_{file.filename}"
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    file_bytes = await file.read()
+
+    # -----------------------
+    # Upload to CPANEL (SFTP)
+    # -----------------------
+    uploaded = upload_to_cpanel(file_bytes, filename)
+
+    if not uploaded:
+        return JSONResponse(status_code=500, content={"error": "Failed to upload to cPanel"})
+
+    # Build public image URL
+    image_url = f"{os.getenv('CPANEL_BASE_URL')}/{filename}"
 
     try:
-        # Save file
-        with open(file_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-
         query = """
             INSERT INTO gallery (path, image_id, user_id, status, created_at, updated_at)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -43,7 +51,7 @@ async def create_gallery(file: UploadFile, user_id: int, image_id: Optional[int]
                 await cursor.execute(query, (filename, image_id, user_id, 1, now, now))
                 await db.commit()
 
-        return {"message": "Upload successful", "file": filename}
+        return {"message": "Upload successful", "file": filename, "url": image_url}
 
     except Exception as e:
         if db:
@@ -53,7 +61,6 @@ async def create_gallery(file: UploadFile, user_id: int, image_id: Optional[int]
     finally:
         if db and not conn_is_pool:
             db.close()
-
 
 # ----------------------------
 # GET ALL GALLERY
