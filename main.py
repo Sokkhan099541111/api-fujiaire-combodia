@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import warnings
 
 # ✅ Add this import for DB pool
 from db import init_db_pool, pool
@@ -102,7 +103,7 @@ app.include_router(routerSpicification.router)
 app.include_router(routerGallery.router)
 app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 # Include your gallery API router
 
 app.include_router(routerGallery.router, prefix="/api/gallery", tags=["Gallery"])
