@@ -529,7 +529,7 @@ async def update_product_category(product_id: int, data: dict):
 # ------------------------------
 # ✅ Update 'new' field only
 # ------------------------------
-async def update_product_new(product_id: int, data: dict):
+async def update_product_new(type_id: int, data: dict):
     """
     Update only the 'new' field for a product.
     """
@@ -537,29 +537,29 @@ async def update_product_new(product_id: int, data: dict):
     async with conn.cursor(aiomysql.DictCursor) as cursor:
         try:
             # Check if product exists
-            await cursor.execute("SELECT id FROM product WHERE id = %s", (product_id,))
+            await cursor.execute("SELECT id FROM product WHERE id = %s", (type_id,))
             row = await cursor.fetchone()
             if not row:
                 return {"success": False, "error": "Product not found"}
 
-            new_status = data.get("new")
-            if new_status is None:
-                return {"success": False, "error": "'new' field is required"}
+            type_id_status = data.get("type_id")
+            if type_id_status is None:
+                return {"success": False, "error": "'type_id' field is required"}
 
-            # Update 'new' field
+            # Update 'type_id' field
             await cursor.execute("""
                 UPDATE product 
-                SET new = %s,
+                SET type_id = %s,
                     updated_at = %s
                 WHERE id = %s
-            """, (new_status, datetime.datetime.utcnow(), product_id))
+            """, (type_id_status, datetime.datetime.utcnow(), type_id))
             
             await conn.commit()
             return {
                 "success": True,
-                "id": product_id,
-                "new": new_status,
-                "message": "Product 'new' status updated successfully"
+                "id": type_id,
+                "type_id": type_id_status,
+                "message": "Product 'type_id' status updated successfully"
             }
 
         except Exception as e:
