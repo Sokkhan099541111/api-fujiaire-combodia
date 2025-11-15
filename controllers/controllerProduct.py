@@ -220,6 +220,12 @@ async def get_product_by_slug(slug: str):
         "images": []
     }
 
+# ✅ Disable fields when is_active = 0
+    if product["is_active"] == 0:
+        product["about_product"] = None
+        product["image_id_about_product"] = None
+        product["path_about_product"] = None
+
     for row in rows:
         if row["spicification_id"]:
             spec_obj = {
