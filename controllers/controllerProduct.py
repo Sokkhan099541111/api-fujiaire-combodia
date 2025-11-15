@@ -309,14 +309,20 @@ async def update_product(product_id: int, data: dict):
 
             created_at = row["created_at"]
 
-            # Prepare images
+            # Prepare images list for gallery
             images = [img for img in data.get("images", []) if img.get("path")]
-            first_image = images[0] if images else None
+            first_image = images[0] if images else None  # main gallery image
 
             # Generate slug
             slug = slugify(data.get("name", ""))
 
-            # ✅ Correct column-value order
+            # Get single about product image path
+            path_about_product = data.get("path_about_product")
+            image_id_about_product = data.get("image_id_about_product")
+
+            # -----------------------------
+            #       UPDATE PRODUCT
+            # -----------------------------
             await cursor.execute("""
                 UPDATE product SET
                     category=%s,
@@ -326,6 +332,7 @@ async def update_product(product_id: int, data: dict):
                     is_active=%s,
                     about_product=%s,
                     image_id_about_product=%s,
+                    path_about_product=%s,
                     image_id=%s,
                     path=%s,
                     detail=%s,
@@ -341,9 +348,13 @@ async def update_product(product_id: int, data: dict):
                 slug,
                 data.get("is_active", 1),
                 data.get("about_product"),
-                data.get("image_id_about_product"),
-                first_image["id"] if first_image else None,
-                first_image["path"] if first_image else None,
+
+                image_id_about_product,          # single image id
+                path_about_product,              # single path (NEW ✓)
+
+                first_image["id"] if first_image else None,   # main product image id
+                first_image["path"] if first_image else None, # main product image path
+
                 data.get("detail"),
                 data.get("user_id"),
                 data.get("category_id"),
@@ -352,7 +363,9 @@ async def update_product(product_id: int, data: dict):
                 product_id
             ))
 
-            # ✅ Update specification relations
+            # -----------------------------
+            #  UPDATE SPECIFICATION RELATIONS
+            # -----------------------------
             await cursor.execute("DELETE FROM product_spicification WHERE product_id=%s", (product_id,))
             for spic_id in data.get("spicification_id", []):
                 await cursor.execute(
@@ -360,7 +373,9 @@ async def update_product(product_id: int, data: dict):
                     (product_id, spic_id)
                 )
 
-            # ✅ Update product images
+            # -----------------------------
+            #      UPDATE GALLERY IMAGES
+            # -----------------------------
             await cursor.execute("DELETE FROM product_images WHERE product_id=%s", (product_id,))
             for img in images:
                 await cursor.execute(
@@ -374,8 +389,10 @@ async def update_product(product_id: int, data: dict):
         except Exception as e:
             await conn.rollback()
             return {"error": str(e)}
+
         finally:
             conn.close()
+
 
 
 # ===============================
