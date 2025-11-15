@@ -529,37 +529,48 @@ async def update_product_category(product_id: int, data: dict):
 # ------------------------------
 # ✅ Update 'new' field only
 # ------------------------------
-async def update_product_new(type_id: int, data: dict):
+async def update_product_new(product_id: int, data: dict):
     """
-    Update only the 'new' field for a product.
+    Update ONLY the 'type_id' field of a product.
     """
     conn = await get_db_connection()
+
     async with conn.cursor(aiomysql.DictCursor) as cursor:
         try:
             # Check if product exists
-            await cursor.execute("SELECT id FROM product WHERE id = %s", (type_id,))
+            await cursor.execute("SELECT id FROM product WHERE id = %s", (product_id,))
             row = await cursor.fetchone()
+
             if not row:
                 return {"success": False, "error": "Product not found"}
 
-            type_id_status = data.get("type_id")
-            if type_id_status is None:
-                return {"success": False, "error": "'type_id' field is required"}
+            # Validate input
+            new_type_id = data.get("type_id")
+            if new_type_id is None:
+                return {
+                    "success": False,
+                    "error": "'type_id' field is required"
+                }
 
-            # Update 'type_id' field
+            # Update field
             await cursor.execute("""
-                UPDATE product 
+                UPDATE product
                 SET type_id = %s,
                     updated_at = %s
                 WHERE id = %s
-            """, (type_id_status, datetime.datetime.utcnow(), type_id))
-            
+            """, (
+                new_type_id,
+                datetime.datetime.utcnow(),
+                product_id
+            ))
+
             await conn.commit()
+
             return {
                 "success": True,
-                "id": type_id,
-                "type_id": type_id_status,
-                "message": "Product 'type_id' status updated successfully"
+                "id": product_id,
+                "type_id": new_type_id,
+                "message": "Product type_id updated successfully"
             }
 
         except Exception as e:
@@ -568,6 +579,7 @@ async def update_product_new(type_id: int, data: dict):
 
         finally:
             conn.close()
+
 
 async def get_all_new_products_public():
     conn = await get_db_connection()
