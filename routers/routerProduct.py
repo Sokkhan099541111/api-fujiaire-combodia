@@ -56,7 +56,7 @@ async def update_category(product_id: int, request: Request, user=Depends(requir
     data = await request.json()
     return await controllerProduct.update_product_category(product_id, data)
 
-@router.put("/update/set/product/type_id/{type_id}")
-async def update_new(type_id: int, request: Request, user=Depends(require_permission("Update Products"))):
+@router.put("/update/set/product/type_id/{product_id}")
+async def update_new(product_id: int, request: Request, user=Depends(require_permission("Update Products"))):
     data = await request.json()
-    return await controllerProduct.update_product_new(type_id, data)
+    return await controllerProduct.update_product_new(product_id, data)
