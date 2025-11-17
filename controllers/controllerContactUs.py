@@ -34,7 +34,7 @@ async def save_to_database(name: str, email: str, subject: str, message: str):
             (name, email, subject, message, created_at, updated_at),
         )
     await conn.commit()
-    await conn.close()
+    conn.close()  # no await here
 
 
 async def send_email(name: str, email: str, subject: str, message: str):
