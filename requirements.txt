@@ -29,3 +29,4 @@ setuptools<81
 aiomysql==0.2.0
 paramiko==3.4.0
 cryptography==41.0.4
+aiosmtplib==2.3.1

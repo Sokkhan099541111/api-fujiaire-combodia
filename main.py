@@ -28,6 +28,7 @@ from routers import (
     routerPermission,
     routerRolePermission,
     routerSpicification,
+    routerContactUs
 )
 
 app = FastAPI()
@@ -101,6 +102,7 @@ app.include_router(routerPermission.router)
 app.include_router(routerRolePermission.router)
 app.include_router(routerSpicification.router)
 app.include_router(routerGallery.router)
+app.include_router(routerContactUs.router)
 app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
