@@ -44,7 +44,6 @@ async def send_email(name: str, email: str, subject: str, message: str):
     msg["Subject"] = subject
     msg.set_content(f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}")
 
-    # SSL or STARTTLS connection
     use_ssl = SMTP_ENCRYPTION == "ssl"
 
     await aiosmtplib.send(
@@ -53,9 +52,10 @@ async def send_email(name: str, email: str, subject: str, message: str):
         port=SMTP_PORT,
         username=SMTP_USERNAME,
         password=SMTP_PASSWORD,
-        start_tls=False,   # because port 465 uses SSL, not STARTTLS
-        use_tls=True, 
+        start_tls=not use_ssl,
+        use_tls=use_ssl,
     )
+
 
 
 async def send_telegram_message(name: str, email: str, subject: str, message: str):
