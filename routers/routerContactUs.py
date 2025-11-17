@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Form
 from controllers.controllerContactUs import submit_contact_controller
 
-router = APIRouter(prefix="/contact", tags=["Contact"])
+router = APIRouter(prefix="/api/contact", tags=["Contact"])
 
 
 @router.post("/")

@@ -30,3 +30,5 @@ aiomysql==0.2.0
 paramiko==3.4.0
 cryptography==41.0.4
 aiosmtplib==1.1.7
+python-3.10.13
+httpx==0.24.1
