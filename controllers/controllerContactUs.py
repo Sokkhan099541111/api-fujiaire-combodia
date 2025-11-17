@@ -1,83 +1,98 @@
-import os
+import aiomysql
 import httpx
 import aiosmtplib
-import datetime
 from email.message import EmailMessage
+from datetime import datetime
 from db import get_db_connection
 
 
-# ------------------------------------
-# Save to Database (with timestamps)
-# ------------------------------------
-async def save_to_database(name, email, message):
-    created_at = datetime.datetime.utcnow()
-    updated_at = datetime.datetime.utcnow()
+# ----------------------------
+# SAVE TO DATABASE
+# ----------------------------
+async def save_to_database(name, email, subject, message):
+    created_at = datetime.utcnow()
+    updated_at = datetime.utcnow()
 
     conn = await get_db_connection()
     async with conn.cursor() as cur:
         await cur.execute("""
             INSERT INTO contact_us (name, email, subject, message, created_at, updated_at)
             VALUES (%s, %s, %s, %s, %s, %s)
-        """, (name, email, None, message, created_at, updated_at))
-    conn.close()
+        """, (name, email, subject, message, created_at, updated_at))
+
+        await conn.commit()
 
 
-# ------------------------------------
-# Send to Telegram
-# ------------------------------------
-async def send_to_telegram(name, email, message):
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+# ----------------------------
+# SEND TELEGRAM
+# ----------------------------
+async def send_to_telegram(name, email, subject, message):
+    TELEGRAM_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+    CHAT_ID = "YOUR_CHAT_ID"
 
-    text = f"""
-📩 NEW CONTACT
-👤 Name: {name}
-📧 Email: {email}
+    text = (
+        f"📩 *New Contact Message*\n\n"
+        f"👤 Name: {name}\n"
+        f"📧 Email: {email}\n"
+        f"📝 Subject: {subject}\n"
+        f"💬 Message:\n{message}\n"
+    )
 
-💬 Message:
-{message}
-"""
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
 
     async with httpx.AsyncClient() as client:
-        await client.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data={"chat_id": chat_id, "text": text}
-        )
+        await client.post(url, json=payload)
 
 
-# ------------------------------------
-# Send Email
-# ------------------------------------
-async def send_email(name, email, message):
+# ----------------------------
+# SEND EMAIL
+# ----------------------------
+async def send_email(name, email, subject, message):
     msg = EmailMessage()
-    msg["Subject"] = "New Contact Message"
-    msg["From"] = os.getenv("SMTP_USER")
-    msg["To"] = os.getenv("SMTP_USER")
+    msg["From"] = "YOUR_EMAIL@gmail.com"
+    msg["To"] = "YOUR_EMAIL@gmail.com"
+    msg["Subject"] = f"New Contact Message: {subject}"
 
     msg.set_content(
-        f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
+        f"""
+New Contact Form Submission
+
+Name: {name}
+Email: {email}
+Subject: {subject}
+
+Message:
+{message}
+"""
     )
 
     await aiosmtplib.send(
         msg,
-        hostname=os.getenv("SMTP_HOST"),
-        port=int(os.getenv("SMTP_PORT")),
-        username=os.getenv("SMTP_USER"),
-        password=os.getenv("SMTP_PASS"),
-        start_tls=True
+        hostname="smtp.gmail.com",
+        port=587,
+        username="YOUR_EMAIL@gmail.com",
+        password="YOUR_APP_PASSWORD",
+        start_tls=True,
     )
 
 
-# ------------------------------------
-# Controller (JSON Body)
-# ------------------------------------
+# ----------------------------
+# MAIN CONTROLLER
+# ----------------------------
 async def submit_contact_controller(data: dict):
-    name = data.get("name")
-    email = data.get("email")
-    message = data.get("message")
+    name = data.get("name", "")
+    email = data.get("email", "")
+    subject = data.get("subject", "") or ""   # FIX: never NULL
+    message = data.get("message", "")
 
-    await save_to_database(name, email, message)
-    await send_to_telegram(name, email, message)
-    await send_email(name, email, message)
+    # Save to DB
+    await save_to_database(name, email, subject, message)
 
-    return {"message": "Contact submitted successfully!"}
+    # Send Telegram
+    await send_to_telegram(name, email, subject, message)
+
+    # Send Email
+    await send_email(name, email, subject, message)
+
+    return {"status": "success", "message": "Contact submitted successfully"}
