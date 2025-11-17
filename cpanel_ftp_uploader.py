@@ -25,12 +25,21 @@ async def upload_to_ftp(file_bytes: bytes, filename: str) -> bool:
     try:
         tls_context = ssl.create_default_context()
 
+        # async with aioftp.Client.context(
+        #     host=FTP_HOST,
+        #     user=FTP_USER,
+        #     password=FTP_PASS,
+        #     ssl=tls_context,
+        #     socket_timeout=30
+        # ) as client:
+
         async with aioftp.Client.context(
             host=FTP_HOST,
             user=FTP_USER,
             password=FTP_PASS,
-            ssl=tls_context,
-            socket_timeout=30
+            ssl=None,  # disable SSL/TLS for plain FTP
+            socket_timeout=30,
+            port=21  # optional if default
         ) as client:
 
             # Ensure upload directory exists
