@@ -1,37 +1,39 @@
-# controllers/gallery_controller.py
-
 import os
 import datetime
 import aiomysql
+from fastapi import UploadFile
 from fastapi.responses import JSONResponse
 from db import get_db_connection
 from cpanel_ftp_uploader import upload_to_ftp
 
 
-# ------------------------------------------------------
-# CREATE GALLERY ITEM + UPLOAD IMAGE TO CPANEL (FTP)
-# ------------------------------------------------------
-async def create_gallery(file, user_id: int, image_id: int = None):
-
+async def create_gallery(file: UploadFile, user_id: int, image_id: int = None) -> dict:
+    """
+    Upload file to cPanel FTP and save gallery record in database.
+    """
     db = await get_db_connection()
     is_pool = hasattr(db, "acquire")
     now = datetime.datetime.utcnow()
 
-    # Generate file name
-    filename = f"{now.strftime('%Y%m%d%H%M%S')}_{file.filename}"
-    file_bytes = await file.read()
-
-    # Upload image to cPanel via FTP
-    uploaded = await upload_to_ftp(file_bytes, filename)
-
-    if not uploaded:
-        return JSONResponse(status_code=500, content={"error": "FTP upload failed"})
-
-    # Public URL (domain.com/uploads/file.jpg)
-    image_url = f"{os.getenv('CPANEL_BASE_URL')}/{filename}"
-
-    # Save to DB
     try:
+        # Read file bytes safely
+        file_bytes = await file.read()
+        if not file_bytes:
+            return JSONResponse(status_code=400, content={"error": "File is empty"})
+
+        # Generate unique filename
+        filename = f"{now.strftime('%Y%m%d%H%M%S')}_{file.filename}"
+
+        # Upload to FTP (must return True/False)
+        uploaded = await upload_to_ftp(file_bytes, filename)
+        if not uploaded:
+            return JSONResponse(status_code=500, content={"error": "FTP upload failed"})
+
+        # Compose public URL
+        base_url = os.getenv('CPANEL_BASE_URL', '').rstrip('/')
+        image_url = f"{base_url}/{filename}" if base_url else filename
+
+        # Save record to DB
         query = """
             INSERT INTO gallery (path, image_id, user_id, status, created_at, updated_at)
             VALUES (%s, %s, %s, 1, %s, %s)
@@ -40,15 +42,11 @@ async def create_gallery(file, user_id: int, image_id: int = None):
         if is_pool:
             async with db.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    await cursor.execute(
-                        query, (filename, image_id, user_id, now, now)
-                    )
+                    await cursor.execute(query, (filename, image_id, user_id, now, now))
                     await conn.commit()
         else:
             async with db.cursor() as cursor:
-                await cursor.execute(
-                    query, (filename, image_id, user_id, now, now)
-                )
+                await cursor.execute(query, (filename, image_id, user_id, now, now))
                 await db.commit()
 
         return {"message": "Upload successful", "file": filename, "url": image_url}
@@ -60,13 +58,13 @@ async def create_gallery(file, user_id: int, image_id: int = None):
 
     finally:
         if db and not is_pool:
-            db.close()
+            await db.close()
 
 
-# ------------------------------------------------------
-# GET ALL
-# ------------------------------------------------------
-async def get_all_gallery():
+async def get_all_gallery() -> list:
+    """
+    Retrieve all active gallery records.
+    """
     db = await get_db_connection()
     is_pool = hasattr(db, "acquire")
     rows = []
@@ -88,13 +86,13 @@ async def get_all_gallery():
 
     finally:
         if db and not is_pool:
-            db.close()
+            await db.close()
 
 
-# ------------------------------------------------------
-# GET BY ID
-# ------------------------------------------------------
-async def get_gallery_by_id(gallery_id: int):
+async def get_gallery_by_id(gallery_id: int) -> dict | None:
+    """
+    Retrieve a gallery record by its ID.
+    """
     db = await get_db_connection()
     is_pool = hasattr(db, "acquire")
     row = None
@@ -116,13 +114,13 @@ async def get_gallery_by_id(gallery_id: int):
 
     finally:
         if db and not is_pool:
-            db.close()
+            await db.close()
 
 
-# ------------------------------------------------------
-# UPDATE
-# ------------------------------------------------------
-async def update_gallery(gallery_id: int, image_id: int, user_id: int, status: int):
+async def update_gallery(gallery_id: int, image_id: int, user_id: int, status: int) -> dict:
+    """
+    Update gallery record.
+    """
     db = await get_db_connection()
     is_pool = hasattr(db, "acquire")
     now = datetime.datetime.utcnow()
@@ -153,13 +151,13 @@ async def update_gallery(gallery_id: int, image_id: int, user_id: int, status: i
 
     finally:
         if db and not is_pool:
-            db.close()
+            await db.close()
 
 
-# ------------------------------------------------------
-# SOFT DELETE
-# ------------------------------------------------------
-async def soft_delete_gallery(gallery_id: int):
+async def soft_delete_gallery(gallery_id: int) -> dict:
+    """
+    Soft delete gallery by setting status to 0.
+    """
     db = await get_db_connection()
     is_pool = hasattr(db, "acquire")
 
@@ -185,4 +183,4 @@ async def soft_delete_gallery(gallery_id: int):
 
     finally:
         if db and not is_pool:
-            db.close()
+            await db.close()

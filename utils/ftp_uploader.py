@@ -8,7 +8,7 @@ def upload_to_cpanel_ftp(ftp_host, ftp_user, ftp_pass, file, upload_path="/publi
         ftp = FTP(ftp_host, timeout=30)
         ftp.login(ftp_user, ftp_pass)
 
-        # Create folder if not exists
+        # Ensure directory exists
         try:
             ftp.cwd(upload_path)
         except:
@@ -25,7 +25,7 @@ def upload_to_cpanel_ftp(ftp_host, ftp_user, ftp_pass, file, upload_path="/publi
 
         ftp.cwd(upload_path)
 
-        # Generate file name
+        # File name
         ext = os.path.splitext(file.filename)[1]
         file_name = datetime.now().strftime("%Y%m%d%H%M%S") + ext
 
