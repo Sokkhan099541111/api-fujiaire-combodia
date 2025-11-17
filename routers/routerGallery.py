@@ -58,3 +58,5 @@ async def delete(gallery_id: int):
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
+
+

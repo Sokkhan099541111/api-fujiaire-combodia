@@ -58,29 +58,29 @@ async def create_gallery(file, user_id: int, image_id: int = None):
 # ------------------------------------------------------
 # GET ALL
 # ------------------------------------------------------
-async def get_all_gallery():
-    db = await get_db_connection()
-    is_pool = hasattr(db, "acquire")
-    rows = []
+# async def get_all_gallery():
+#     db = await get_db_connection()
+#     is_pool = hasattr(db, "acquire")
+#     rows = []
 
-    try:
-        query = "SELECT * FROM gallery WHERE status = 1"
+#     try:
+#         query = "SELECT * FROM gallery WHERE status = 1"
 
-        if is_pool:
-            async with db.acquire() as conn:
-                async with conn.cursor(aiomysql.DictCursor) as cursor:
-                    await cursor.execute(query)
-                    rows = await cursor.fetchall()
-        else:
-            async with db.cursor(aiomysql.DictCursor) as cursor:
-                await cursor.execute(query)
-                rows = await cursor.fetchall()
+#         if is_pool:
+#             async with db.acquire() as conn:
+#                 async with conn.cursor(aiomysql.DictCursor) as cursor:
+#                     await cursor.execute(query)
+#                     rows = await cursor.fetchall()
+#         else:
+#             async with db.cursor(aiomysql.DictCursor) as cursor:
+#                 await cursor.execute(query)
+#                 rows = await cursor.fetchall()
 
-        return rows
+#         return rows
 
-    finally:
-        if db and not is_pool:
-            db.close()  # <-- Removed await here
+#     finally:
+#         if db and not is_pool:
+#             db.close()  # <-- Removed await here
 
 
 # ------------------------------------------------------
@@ -178,3 +178,38 @@ async def soft_delete_gallery(gallery_id: int):
     finally:
         if db and not is_pool:
             db.close()  # <-- Removed await here
+
+
+
+async def get_all_gallery():
+    db = await get_db_connection()
+    is_pool = hasattr(db, "acquire")
+    rows = []
+
+    base_url = os.getenv('CPANEL_BASE_URL', '').rstrip('/')
+
+    try:
+        query = "SELECT * FROM gallery WHERE status = 1"
+
+        if is_pool:
+            async with db.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cursor:
+                    await cursor.execute(query)
+                    rows = await cursor.fetchall()
+        else:
+            async with db.cursor(aiomysql.DictCursor) as cursor:
+                await cursor.execute(query)
+                rows = await cursor.fetchall()
+
+        # Add full URL field for each record
+        for row in rows:
+            if 'path' in row and row['path']:
+                row['url'] = f"{base_url}/{row['path']}"
+            else:
+                row['url'] = None
+
+        return rows
+
+    finally:
+        if db and not is_pool:
+            db.close()
