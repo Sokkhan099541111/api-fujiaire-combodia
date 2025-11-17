@@ -16,9 +16,9 @@ async def save_to_database(name, email, message):
     conn = await get_db_connection()
     async with conn.cursor() as cur:
         await cur.execute("""
-            INSERT INTO contact (name, email, message, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (name, email, message, created_at, updated_at))
+            INSERT INTO contact_us (name, email, subject, message, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (name, email, None, message, created_at, updated_at))
     conn.close()
 
 
