@@ -53,8 +53,8 @@ async def send_email(name: str, email: str, subject: str, message: str):
         port=SMTP_PORT,
         username=SMTP_USERNAME,
         password=SMTP_PASSWORD,
-        start_tls=not use_ssl,
-        use_tls=use_ssl,
+        start_tls=False,   # because port 465 uses SSL, not STARTTLS
+        use_tls=True, 
     )
 
 
