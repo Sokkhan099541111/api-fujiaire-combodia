@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
 from typing import Optional
-from controllers.gallery_controller import (
+from controllers.controllerGallery import (
     create_gallery,
     get_all_gallery,
     get_gallery_by_id,
