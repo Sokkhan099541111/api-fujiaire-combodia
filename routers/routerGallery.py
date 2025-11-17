@@ -52,7 +52,7 @@ async def update(
     return result
 
 
-@router.delete("/{gallery_id}", status_code=status.HTTP_200_OK)
+@router.delete("/delete/{gallery_id}", status_code=status.HTTP_200_OK)
 async def delete(gallery_id: int):
     result = await soft_delete_gallery(gallery_id)
     if isinstance(result, dict) and "error" in result:
