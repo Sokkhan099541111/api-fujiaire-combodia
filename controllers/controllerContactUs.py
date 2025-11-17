@@ -52,9 +52,11 @@ async def send_email(name: str, email: str, subject: str, message: str):
         port=SMTP_PORT,
         username=SMTP_USERNAME,
         password=SMTP_PASSWORD,
-        start_tls=not use_ssl,
-        use_tls=use_ssl,
+        start_tls=(SMTP_PORT == 587),  # True if port 587, else False
+        use_tls=(SMTP_PORT == 465),    # True if port 465, else False
+        timeout=10,                    # Optional, increase timeout if needed
     )
+
 
 
 
