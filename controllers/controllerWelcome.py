@@ -1,6 +1,22 @@
+import os
 import datetime
 import aiomysql
 from db import get_db_connection
+
+# Base URL to your cPanel uploads folder (adjust if needed)
+CPANEL_BASE = os.getenv("CPANEL_BASE_URL", "https://fujiairecambodia.com/uploads").rstrip("/")
+
+def clean_cpanel_path(path: str):
+    if not path:
+        return None
+    # Remove duplicate base URL if accidentally stored
+    return path.replace(CPANEL_BASE + "/", "").replace(CPANEL_BASE, "").lstrip("/")
+
+def build_url(path: str):
+    if not path:
+        return None
+    clean_path = clean_cpanel_path(path)
+    return f"{CPANEL_BASE}/{clean_path}"
 
 
 # ==========================================
@@ -11,7 +27,11 @@ async def get_all_welcome():
     try:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute("SELECT * FROM welcome ORDER BY id DESC")
-            return await cursor.fetchall()
+            rows = await cursor.fetchall()
+            # Fix image URLs
+            for r in rows:
+                r["path"] = build_url(r.get("path"))
+            return rows
     finally:
         conn.close()
 
@@ -24,7 +44,10 @@ async def get_welcome_by_id(welcome_id: int):
     try:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute("SELECT * FROM welcome WHERE id = %s", (welcome_id,))
-            return await cursor.fetchone()
+            row = await cursor.fetchone()
+            if row:
+                row["path"] = build_url(row.get("path"))
+            return row
     finally:
         conn.close()
 
@@ -54,7 +77,9 @@ async def create_welcome(data: dict):
 
             now = datetime.datetime.now()
 
-            # FIXED: Added missing banner_id into INSERT list
+            # Clean path before insert
+            path_cleaned = clean_cpanel_path(data.get("path"))
+
             await cursor.execute("""
                 INSERT INTO welcome
                     (title, detail, image_id, path, banner_id, user_id, status, created_at, updated_at)
@@ -63,7 +88,7 @@ async def create_welcome(data: dict):
                 data.get("title"),
                 data.get("detail"),
                 data.get("image_id"),
-                data.get("path"),
+                path_cleaned,
                 data.get("banner_id"),
                 data.get("user_id"),
                 data.get("status", 1),
@@ -77,6 +102,7 @@ async def create_welcome(data: dict):
             return {
                 "id": welcome_id,
                 **data,
+                "path": build_url(path_cleaned),
                 "created_at": now,
                 "updated_at": now
             }
@@ -117,7 +143,8 @@ async def update_welcome(welcome_id: int, data: dict):
             if not await cursor.fetchone():
                 return {"error": "user_id not found"}
 
-            # FIXED: update includes banner_id
+            path_cleaned = clean_cpanel_path(data.get("path"))
+
             await cursor.execute("""
                 UPDATE welcome SET
                     title = %s,
@@ -134,7 +161,7 @@ async def update_welcome(welcome_id: int, data: dict):
                 data.get("title"),
                 data.get("detail"),
                 data.get("image_id"),
-                data.get("path"),
+                path_cleaned,
                 data.get("banner_id"),
                 data.get("user_id"),
                 data.get("status", 1),
@@ -148,6 +175,7 @@ async def update_welcome(welcome_id: int, data: dict):
             return {
                 "id": welcome_id,
                 **data,
+                "path": build_url(path_cleaned),
                 "created_at": created_at,
                 "updated_at": updated_at
             }
@@ -178,6 +206,9 @@ async def get_all_welcome_public():
     try:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute("SELECT * FROM welcome WHERE status = 1 ORDER BY id DESC")
-            return await cursor.fetchall()
+            rows = await cursor.fetchall()
+            for r in rows:
+                r["path"] = build_url(r.get("path"))
+            return rows
     finally:
         conn.close()
