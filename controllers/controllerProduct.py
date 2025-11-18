@@ -41,7 +41,9 @@ async def get_all_products():
                 p.path_about_product,
                 p.path AS primary_path,
                 p.user_id,
+
                 ps.spicification_id,
+
                 pi.id AS product_image_id,
                 pi.image_path
             FROM product p
@@ -52,8 +54,10 @@ async def get_all_products():
         rows = await cursor.fetchall()
 
     products = {}
+
     for row in rows:
         pid = row["product_id"]
+
         if pid not in products:
             products[pid] = {
                 "id": pid,
@@ -63,21 +67,30 @@ async def get_all_products():
                 "is_active": row["is_active"],
                 "about_product": row["about_product"],
                 "image_id_about_product": row["image_id_about_product"],
-                "path_about_product": row["path_about_product"],
+                "path_about_product": build_url(row["path_about_product"]),   # ✅ FIXED
                 "type_id": row["type_id"],
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
                 "category_id": row["category_id"],
+
                 "image_id": row["image_id"],
-                "primary_path": row["primary_path"],
+                "primary_path": build_url(row["primary_path"]),  # ✅ FIXED
+
                 "user_id": row["user_id"],
                 "spicifications": [],
                 "images": []
             }
+
+        # Add spicification
         if row["spicification_id"] and row["spicification_id"] not in products[pid]["spicifications"]:
             products[pid]["spicifications"].append(row["spicification_id"])
+
+        # Add product images
         if row["product_image_id"]:
-            img_obj = {"id": row["product_image_id"], "path": row["image_path"]}
+            img_obj = {
+                "id": row["product_image_id"],
+                "path": build_url(row["image_path"])      # ✅ FIXED
+            }
             if img_obj not in products[pid]["images"]:
                 products[pid]["images"].append(img_obj)
 
@@ -106,10 +119,11 @@ async def get_product_by_id(product_id: int):
                 p.image_id_about_product,
                 p.path_about_product,
                 p.type_id,
-                p.image_id_about_product,
                 p.path AS primary_path,
                 p.user_id,
+
                 ps.spicification_id,
+
                 pi.id AS product_image_id,
                 pi.image_path
             FROM product p
@@ -123,33 +137,48 @@ async def get_product_by_id(product_id: int):
         await conn.ensure_closed()
         return None
 
-    # ✅ Use first row to initialize product object
+    first = rows[0]
+
+    # ✅ Base product object + URLs fixed
     product = {
-        "id": rows[0]["product_id"],
-        "name": rows[0]["product_name"],
-        "detail": rows[0]["detail"],
-        "status": rows[0]["status"],
-        "is_active": rows[0]["is_active"],
-        "about_product": rows[0]["about_product"],
-        "image_id_about_product": rows[0]["image_id_about_product"],
-        "path_about_product": rows[0]["path_about_product"],
-        "type_id": rows[0]["type_id"],
-        "created_at": rows[0]["created_at"],
-        "updated_at": rows[0]["updated_at"],
-        "category_id": rows[0]["category_id"],
-        "image_id": rows[0]["image_id"],
-        "primary_path": rows[0]["primary_path"],
-        "user_id": rows[0]["user_id"],
+        "id": first["product_id"],
+        "name": first["product_name"],
+        "detail": first["detail"],
+        "status": first["status"],
+        "is_active": first["is_active"],
+        "about_product": first["about_product"],
+        "image_id_about_product": first["image_id_about_product"],
+        "path_about_product": build_url(first["path_about_product"]),   # ✅ FIXED
+        "type_id": first["type_id"],
+        "created_at": first["created_at"],
+        "updated_at": first["updated_at"],
+        "category_id": first["category_id"],
+        "image_id": first["image_id"],
+        "primary_path": build_url(first["primary_path"]),               # ✅ FIXED
+        "user_id": first["user_id"],
         "spicifications": [],
         "images": []
     }
 
-    # ✅ Append related specs and images
+    # Disable about-product fields if inactive
+    if product["is_active"] == 0:
+        product["about_product"] = None
+        product["image_id_about_product"] = None
+        product["path_about_product"] = None
+
+    # Add unique specs + images with full URL
     for row in rows:
+
+        # Specs
         if row["spicification_id"] and row["spicification_id"] not in product["spicifications"]:
             product["spicifications"].append(row["spicification_id"])
+
+        # Images
         if row["product_image_id"]:
-            img_obj = {"id": row["product_image_id"], "path": row["image_path"]}
+            img_obj = {
+                "id": row["product_image_id"],
+                "path": build_url(row["image_path"])   # ✅ FIXED
+            }
             if img_obj not in product["images"]:
                 product["images"].append(img_obj)
 
@@ -648,9 +677,11 @@ async def get_all_new_products_public():
                 p.image_id_about_product,
                 p.path_about_product,
                 p.user_id,
+
                 ps.spicification_id,
                 s.title AS spec_title,
                 s.descriptions AS spec_description,
+
                 pi.id AS product_image_id,
                 pi.image_path
             FROM product p
@@ -665,41 +696,48 @@ async def get_all_new_products_public():
     await conn.ensure_closed()
 
     products = {}
+
     for row in rows:
         pid = row["product_id"]
+
         if pid not in products:
             products[pid] = {
                 "id": pid,
                 "name": row["product_name"],
-                "slug": row["slug"],  # ✅ safer get
+                "slug": row["slug"],
                 "detail": row["detail"],
                 "status": row["status"],
                 "new": row["new"],
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
                 "category_id": row["category_id"],
+
                 "image_id": row["image_id"],
-                "primary_path": row["primary_path"],
+                "primary_path": build_url(row["primary_path"]),   # ✅ FIXED
+
                 "image_id_about_product": row["image_id_about_product"],
-                "path_about_product": row["path_about_product"],
+                "path_about_product": build_url(row["path_about_product"]),  # ✅ FIXED
+
                 "user_id": row["user_id"],
                 "spicifications": [],
                 "images": []
             }
 
+        # Add spec
         if row["spicification_id"]:
             spec_obj = {
                 "id": row["spicification_id"],
                 "title": row.get("spec_title"),
-                "description": row.get("spec_description")
+                "description": row.get("spec_description"),
             }
             if spec_obj not in products[pid]["spicifications"]:
                 products[pid]["spicifications"].append(spec_obj)
 
+        # Add product images
         if row["product_image_id"]:
             img_obj = {
                 "id": row["product_image_id"],
-                "path": row["image_path"]
+                "path": build_url(row["image_path"])   # ✅ FIXED
             }
             if img_obj not in products[pid]["images"]:
                 products[pid]["images"].append(img_obj)
