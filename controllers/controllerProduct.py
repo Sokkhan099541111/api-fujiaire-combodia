@@ -3,7 +3,9 @@ import aiomysql
 from db import get_db_connection  # should return aiomysql connection
 import re
 import unicodedata
-
+import os
+# import aiomysql
+# from db import get_db_connection
 
 def slugify(value: str) -> str:
     value = str(value)
@@ -17,6 +19,18 @@ def slugify(value: str) -> str:
     value = value.strip('-')
     # Add .php at the end
     return value + ".php"
+
+def build_url(path: str):
+    if not path:
+        return None
+
+    # If path is already a full URL, return it directly
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+
+    base = os.getenv("CPANEL_BASE_URL", "").rstrip("/")
+    return f"{base}/{path.lstrip('/')}"
+
 
 # ===============================
 # Get all products (admin)
@@ -186,16 +200,11 @@ async def get_product_by_id(product_id: int):
     return product
 
 
-import os
-import aiomysql
-from db import get_db_connection
-
-
-def build_url(path: str):
-    base = os.getenv("CPANEL_BASE_URL", "").rstrip("/")
-    if not path:
-        return None
-    return f"{base}/{path}"
+# def build_url(path: str):
+#     base = os.getenv("CPANEL_BASE_URL", "").rstrip("/")
+#     if not path:
+#         return None
+#     return f"{base}/{path}"
 
 
 async def get_product_by_slug(slug: str):
