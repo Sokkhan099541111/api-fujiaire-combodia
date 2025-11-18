@@ -157,6 +157,18 @@ async def get_product_by_id(product_id: int):
     return product
 
 
+import os
+import aiomysql
+from db import get_db_connection
+
+
+def build_url(path: str):
+    base = os.getenv("CPANEL_BASE_URL", "").rstrip("/")
+    if not path:
+        return None
+    return f"{base}/{path}"
+
+
 async def get_product_by_slug(slug: str):
     conn = await get_db_connection()
     async with conn.cursor(aiomysql.DictCursor) as cursor:
@@ -180,9 +192,11 @@ async def get_product_by_slug(slug: str):
                 p.image_id,
                 p.path AS primary_path,
                 p.user_id,
+
                 ps.spicification_id,
                 s.title AS spec_title,
                 s.descriptions AS spec_description,
+
                 pi.id AS product_image_id,
                 pi.image_path
             FROM product p
@@ -198,6 +212,10 @@ async def get_product_by_slug(slug: str):
         return None
 
     row = rows[0]
+
+    # ===========================
+    # Build product base object
+    # ===========================
     product = {
         "id": row["product_id"],
         "name": row["product_name"],
@@ -206,7 +224,7 @@ async def get_product_by_slug(slug: str):
         "is_active": row["is_active"],
         "about_product": row["about_product"],
         "image_id_about_product": row["image_id_about_product"],
-        "path_about_product": row["path_about_product"],
+        "path_about_product": build_url(row["path_about_product"]),
         "type_id": row["type_id"],
         "new": row["new"],
         "status": row["status"],
@@ -214,34 +232,47 @@ async def get_product_by_slug(slug: str):
         "updated_at": row["updated_at"],
         "category_id": row["category_id"],
         "image_id": row["image_id"],
-        "primary_path": row["primary_path"],
+        "primary_path": build_url(row["primary_path"]),
         "user_id": row["user_id"],
         "spicifications": [],
         "images": []
     }
 
-# ✅ Disable fields when is_active = 0
+    # ===========================
+    # Disable about_product when inactive
+    # ===========================
     if product["is_active"] == 0:
         product["about_product"] = None
         product["image_id_about_product"] = None
         product["path_about_product"] = None
 
-    for row in rows:
-        if row["spicification_id"]:
+    # ===========================
+    # Build specification + images list
+    # ===========================
+    for r in rows:
+
+        # Add spec
+        if r["spicification_id"]:
             spec_obj = {
-                "id": row["spicification_id"],
-                "title": row.get("spec_title"),
-                "description": row.get("spec_description"),
+                "id": r["spicification_id"],
+                "title": r.get("spec_title"),
+                "description": r.get("spec_description"),
             }
             if spec_obj not in product["spicifications"]:
                 product["spicifications"].append(spec_obj)
-        if row["product_image_id"]:
-            img_obj = {"id": row["product_image_id"], "path": row["image_path"]}
+
+        # Add image
+        if r["product_image_id"]:
+            img_obj = {
+                "id": r["product_image_id"],
+                "path": build_url(r["image_path"])
+            }
             if img_obj not in product["images"]:
                 product["images"].append(img_obj)
 
     await conn.ensure_closed()
     return product
+
 
 
 
