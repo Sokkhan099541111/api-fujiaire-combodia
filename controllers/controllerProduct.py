@@ -312,6 +312,107 @@ async def get_product_by_slug(slug: str):
     return product
 
 
+async def get_products_by_type_id(type_id: int):
+    conn = await get_db_connection()
+    async with conn.cursor(aiomysql.DictCursor) as cursor:
+        await cursor.execute("""
+            SELECT 
+                p.id AS product_id,
+                p.name AS product_name,
+                p.slug,
+                p.detail,
+                p.status,
+                p.created_at,
+                p.updated_at,
+                p.category_id,
+                p.product_category,
+                p.is_active,
+                p.about_product,
+                p.image_id_about_product,
+                p.path_about_product,
+                p.type_id,
+                p.new,
+                p.image_id,
+                p.path AS primary_path,
+                p.user_id,
+
+                ps.spicification_id,
+                s.title AS spec_title,
+                s.descriptions AS spec_description,
+
+                pi.id AS product_image_id,
+                pi.image_path
+            FROM product p
+            LEFT JOIN product_spicification ps ON ps.product_id = p.id
+            LEFT JOIN spicification s ON s.id = ps.spicification_id
+            LEFT JOIN product_images pi ON pi.product_id = p.id
+            WHERE p.type_id = %s
+            ORDER BY p.id DESC
+        """, (type_id,))
+
+        rows = await cursor.fetchall()
+
+    if not rows:
+        await conn.ensure_closed()
+        return []
+
+    products = {}
+    for r in rows:
+        pid = r["product_id"]
+
+        # Create base product structure if not exists
+        if pid not in products:
+            products[pid] = {
+                "id": r["product_id"],
+                "name": r["product_name"],
+                "slug": r["slug"],
+                "detail": r["detail"],
+                "is_active": r["is_active"],
+                "about_product": r["about_product"],
+                "image_id_about_product": r["image_id_about_product"],
+                "path_about_product": build_url(r["path_about_product"]),
+                "type_id": r["type_id"],
+                "new": r["new"],
+                "status": r["status"],
+                "created_at": r["created_at"],
+                "updated_at": r["updated_at"],
+                "category_id": r["category_id"],
+                "image_id": r["image_id"],
+                "primary_path": build_url(r["primary_path"]),
+                "user_id": r["user_id"],
+                "spicifications": [],
+                "images": []
+            }
+
+            # Disable about_product if inactive
+            if products[pid]["is_active"] == 0:
+                products[pid]["about_product"] = None
+                products[pid]["image_id_about_product"] = None
+                products[pid]["path_about_product"] = None
+
+        # Add specifications
+        if r["spicification_id"]:
+            spec_obj = {
+                "id": r["spicification_id"],
+                "title": r.get("spec_title"),
+                "description": r.get("spec_description"),
+            }
+            if spec_obj not in products[pid]["spicifications"]:
+                products[pid]["spicifications"].append(spec_obj)
+
+        # Add images
+        if r["product_image_id"]:
+            img_obj = {
+                "id": r["product_image_id"],
+                "path": build_url(r["image_path"])
+            }
+            if img_obj not in products[pid]["images"]:
+                products[pid]["images"].append(img_obj)
+
+    await conn.ensure_closed()
+
+    # Return list of products
+    return list(products.values())
 
 
 # ===============================

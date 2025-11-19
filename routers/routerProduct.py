@@ -42,6 +42,10 @@ async def get_all_public():
 async def get_all_public_id(slug: str):
     return await controllerProduct.get_product_by_slug(slug)
 
+@router.get("/all/public/{type_id}/type")
+async def get_all_public_type(type_id: int):
+    return await controllerProduct.get_products_by_type_id(type_id)
+
 
 @router.get("/category/{category}/all/public")
 async def get_all_products_by_category_public(category: str):
